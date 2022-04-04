@@ -4,12 +4,13 @@ const cors = require('cors')  // Cross origin resource sharing, Security policy
 const dotenv = require('dotenv')
 const cookieParser = require('cookie-parser')
 
+/*
 const WebSocket = require('ws');
 var sharedb = require('sharedb/lib/client');
 const richText = require('rich-text')
 sharedb.types.register(richText.type)
 //const ReconnectingWebSocket = require('reconnecting-websocket');
-
+*/
 // CREATE OUR SERVER
 dotenv.config();
 const PORT = process.env.PORT || 4000;
@@ -23,11 +24,12 @@ app.use(cors({
 }))
 app.use(cookieParser())
 
+/*
 // SETUP OT SOCKETS
 // Open WebSocket connection to ShareDB server
 //var socket = new ReconnectingWebSocket('ws://' + window.location.host);
-var socket = new WebSocket('ws://localhost:8080');
-let connection = new sharedb.Connection(socket);
+socket = new WebSocket('ws://localhost:8080');
+connection = new sharedb.Connection(socket);
 
 // SETUP SESSION MANAGER
 sessionManager = [];
@@ -38,6 +40,7 @@ sessionManager[hash] = {
   connection,
   activeDocuments: []
 }
+*/
 
 // SETUP OUR OWN ROUTERS AS MIDDLEWARE
 const appRouter = require('./routes/app-router');
