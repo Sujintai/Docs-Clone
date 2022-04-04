@@ -22,16 +22,23 @@ connect = async (req,res) => {
     // When document changes (by this client or any other, or the server),
     // update the oplist
     doc.on('op', function (op, source) {
+      if (source) { // if op was users own op
+        //console.log(source);
+        return;
+      }
       console.log("Op detected: ");
       console.log(op);
       //console.log(doc.data); 
       let array_of_oplists = [];
       array_of_oplists[0] = op;
+      console.log(op);
       const data = `data: ${JSON.stringify(array_of_oplists)}\n\n`;
-      
-      if (clients[id]){
+      res.write(data); // Return updated data to client
+      console.log(data);
+      /*if (clients[id]){
         clients[id].res.write(data); // Return updated data to client
-      }
+        clients[id].res.write(data); // Return updated data to client
+      }*/
       
       
     });
@@ -40,17 +47,17 @@ connect = async (req,res) => {
       // Doc is subscribed, initial value should be present
       console.log(`Doc subscribed, initializing doc...`);
       //console.log(doc.data); 
-      if (!doc.data) {
+      if (!doc.type) {
         // Doc doesn't already exist on server, create new one
         console.log(`Doc doesn't already exist, Creating new one...`);
         doc.create([{insert: ''}], 'http://sharejs.org/types/rich-text/v1')
         console.log("Doc created.");
-        console.log(doc.data);
+        console.log(doc.data.ops);
         //doc.submitOp([{retain: 5}, {insert: ' ipsum'}])
       } else {
         // Doc already exists on server
         console.log(`Doc already exists on server`);
-        console.log(doc.data);
+        console.log(doc.data.ops);
       }
       //activeDocuments[id].doc = doc; // Save doc for later, doc is now initialized
       createStream();
@@ -131,20 +138,21 @@ connect = async (req,res) => {
       };
       clients[id] = client;
       console.log("Connected new client: " + id);
-      
-      // Send initial oplist
-      let data = `data: {"content": ${JSON.stringify(doc.data)}}\n\n`;
+      console.log(doc.data.ops);
+      // Send initial oplist (CORRECT)
+      let data = `data: {"content": ${JSON.stringify(doc.data.ops)}}\n\n`;
       res.write(data);
+      console.log(data);
 
       // Manage client close connection
       req.on('close', () => {
           console.log(`Connection closed: ${id}`);
           if (clients[id]) {
-            clients[id].socket.close();
-            clients[id].res.send();
+            //clients[id].socket.close();
+            //clients[id].res.send();
           }
           
-          delete clients[id];
+          //delete clients[id];
           // TODO: if no more active clients, remove doc?
           // Store doc in mongo
           // doc.destroy([callback]) // Destroys doc
@@ -161,7 +169,7 @@ op = async (req,res) => {
     const id = req.params.id;
     console.log("Function: Op received:" )
     if (!clients[id]) { // Check if valid id
-      console.log("Invalid Id for Op")
+      console.log(`Invalid Id for Op ${id}`);
       return res.status(400).send();
     }
     //console.log(req.body)
@@ -173,9 +181,13 @@ op = async (req,res) => {
         [{'insert': 'Hello', 'attributes': {'bold': true}}]
       ];*/
       ops = req.body;
-      newops = [].concat(...ops);
-      clients[id].doc.submitOp(newops);
-      console.log(ops);
+      //newops = [].concat(...ops);
+      ops.forEach(element => {
+        console.log(element);
+        clients[id].doc.submitOp(element);
+      });
+      //clients[id].doc.submitOp(newops);
+      //console.log(newops);
       console.log("Op Submitted" )
       //console.log(JSON.stringify(ops));
       /*ops.forEach(op => {
