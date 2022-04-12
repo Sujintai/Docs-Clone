@@ -1,12 +1,14 @@
 var http = require('http');
 var express = require('express');
+
 var Backend = require('sharedb');
 var WebSocket = require('ws');
 var WebSocketJSONStream = require('@teamwork/websocket-json-stream');
 const richText = require('rich-text')
 
 Backend.types.register(richText.type)
-var backend = new Backend();
+const db = require('sharedb-mongo')('mongodb://localhost:27017/docsclone');
+var backend = new Backend({db});
 var connection = backend.connect();
 
 // Create a web server to serve files and listen to WebSocket connections

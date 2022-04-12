@@ -1,0 +1,129 @@
+const mongoose = require('mongoose');
+const Doc = require('../models/doc-model');
+const sharedb = require('sharedb/lib/client');
+const richText = require('rich-text');
+sharedb.types.register(richText.type);
+
+//  { name } { docid } Create a new document.
+createDoc = async (req,res) => {
+    res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
+    if (!req.body || !req.body.name) {
+        return res.status(200).json({
+            error: true,
+            message: "Bad input"
+        })
+    }
+    let name = req.body.name;
+    
+    let connection = new sharedb.Connection(socket);
+    let doc = connection.get('docs', name);
+    doc.fetch(initializeDoc);
+    async function initializeDoc() {
+        // Doc is fetched, initial value should be present
+        console.log(`Doc fetched, initializing doc...`);
+        if (!doc.type) {
+          // Doc doesn't already exist on server, create new one
+          console.log(`Doc doesn't already exist, Creating new one...`);
+          doc.create([{insert: ''}], 'http://sharejs.org/types/rich-text/v1', async () => {
+            let savedDoc = await Doc.findOne({ _id: name });
+            if (!savedDoc) {
+                return res.status(200).json({
+                    error: true,
+                    message: "Doc created, but not found in db for some reason."
+                })
+            }
+            console.log("Doc created.");
+            console.log(doc.data.ops);
+            return res.status(200).json({
+                message: "Doc created.",
+                docid: savedDoc._o
+            });
+          })
+          
+        } else {
+          // Doc already exists on server
+          console.log(`Doc already exists on server`);
+          console.log(doc.data.ops);
+          return res.status(200).json({
+            error: true,
+            message: "Doc already exists"
+          })
+        }
+        //activeDocuments[id].doc = doc; // Save doc for later, doc is now initialized
+      }
+}   
+
+//  { docid } {} Delete an existing document.
+deleteDoc = async (req,res) => {
+    res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
+    if (!req.body || !req.body.docid) {
+        return res.status(200).json({
+            error: true,
+            message: "Bad input"
+        })
+    }
+    let docid = req.body.docid;
+    console.log("hi")
+    try {
+        let objectid = mongoose.Types.ObjectId(docid);
+        let docToDelete = await Doc.findOne({ _o:objectid });
+        if (!docToDelete) {
+            return res.status(200).json({
+                error: true,
+                message: "Bad input"
+            })
+        }
+
+        let connection = new sharedb.Connection(socket);
+        console.log(docToDelete._id)
+        let doc = connection.get('docs', docToDelete._id);
+        doc.destroy(function(error) {
+            if (error) {
+                return res.status(200).json({
+                    error: true,
+                    message: error
+                })
+            } else {
+                return res.status(200).json({
+                    message: "Doc deleted"
+                })
+            }
+        });
+    } catch {
+        return res.status(200).json({
+            error: true,
+            message: "Bad input"
+        })
+    }
+    
+    
+    
+    
+}   
+
+//  {}    [{ id, name }, ...]
+// Return a list of the most-recently modified 10 documents sorted in reverse chronological order.
+listDocs = async (req,res) => {
+    res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
+    const id = req.params.id;
+    console.log("Get Doc")
+    //console.log(clients[id])
+    if (!clients[id]) { // Check if valid id
+      console.log(clients[id])
+      console.log("invalid id")
+      return res.status(400).send();
+    }
+  
+    var cfg = {};
+  
+    var converter = new QuillDeltaToHtmlConverter(clients[id].doc.data.ops, cfg);
+  
+    html = converter.convert(); 
+    return res.status(200).send(html);
+  }   
+
+module.exports = {
+    createDoc,
+    deleteDoc,
+    listDocs
+}
