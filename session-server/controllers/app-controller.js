@@ -4,15 +4,16 @@ const WebSocket = require('ws');
 var sharedb = require('sharedb/lib/client');
 const richText = require('rich-text')
 sharedb.types.register(richText.type)
-
 QuillDeltaToHtmlConverter = require('quill-delta-to-html').QuillDeltaToHtmlConverter;
-clients = [];
 
+hash = 0;
+clients = [];
+activeDocuments = sessionManager[hash].activeDocuments; // activeDocuments[docid] = clients[]
 //  ...   (Delta event stream)
 // Start Delta event stream connection to server (GET request).
 connect = async (req,res) => {
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
-    const id = req.params.id;
+    const { docid, uid } = req.params;
 
     // Add user to session manager
     // SETUP OT Connection for user
@@ -20,104 +21,72 @@ connect = async (req,res) => {
     //var socket = new ReconnectingWebSocket('ws://' + window.location.host);
     //let socket = new WebSocket('ws://localhost:8080');
     let connection = new sharedb.Connection(socket);
-    let doc = connection.get('documents', 'dog');
-    doc.subscribe(initializeDoc);
+    let doc = connection.get('docs', docid);
+    let presence = connection.getDocPresence('docs', docid);
+
+    doc.subscribe(initializeConnection);
+    
 
     // When document changes (by this client or any other, or the server),
     // update the oplist
     doc.on('op', function (op, source) {
       if (source) { // if op was users own op
+        // Return ack
+        console.log("Own Op detected: ");
         //console.log(source);
+        const data = `data: { ack: ${JSON.stringify(op)}}\n\n`;
+        res.write(data); // Return ack data to client
         return;
       }
-      console.log("Op detected: ");
+      console.log("External Op detected: ");
       console.log(op);
-      //console.log(doc.data); 
-      let array_of_oplists = [];
-      array_of_oplists[0] = op;
-      console.log(op);
-      const data = `data: ${JSON.stringify(array_of_oplists)}\n\n`;
+      //console.log(doc.data);
+      const data = `data: ${JSON.stringify(op)}\n\n`;
       res.write(data); // Return updated data to client
       console.log(data);
-      /*if (clients[id]){
-        clients[id].res.write(data); // Return updated data to client
-        clients[id].res.write(data); // Return updated data to client
-      }*/
-      
-      
     });
     
-    function initializeDoc() {
+    function initializePresence() {
       // Doc is subscribed, initial value should be present
       console.log(`Doc subscribed, initializing doc...`);
-      //console.log(doc.data); 
       if (!doc.type) {
-        // Doc doesn't already exist on server, create new one
-        console.log(`Doc doesn't already exist, Creating new one...`);
-        doc.create([{insert: ''}], 'http://sharejs.org/types/rich-text/v1')
-        console.log("Doc created.");
-        console.log(doc.data.ops);
-        //doc.submitOp([{retain: 5}, {insert: ' ipsum'}])
-      } else {
-        // Doc already exists on server
-        console.log(`Doc already exists on server`);
-        console.log(doc.data.ops);
+        console.log("Doc doesnt exist for some reason. Error.")
+        return res.status(200).json({
+          error: true,
+          message: "Doc doesnt exist for some reason."
+        });
       }
-      //activeDocuments[id].doc = doc; // Save doc for later, doc is now initialized
+      console.log(`Doc exists on server`);
+      //console.log(doc.data.ops);
+      //console.log(doc);
+      if (!activeDocuments[docid]) { // if doc was inactive
+        activeDocuments[docid] = []; // setup client tracking
+        activeDocuments[docid].version = doc.version; // setup version tracking
+      }
+      //activeDocuments[docid].doc = doc; // Save doc for later, doc is now initialized
       createStream();
     }
 
-    
-
-    /*
-    // Initialize Doc
-    // Create local Doc instance mapped to 'documents' collection document with id 'id'
-    if (!doc) {
-      // Doc doesn't already exist locally, create new local doc
-      let connection = sessionManager[idHash].connection;
-      let doc = connection.get('documents', id);
-      //activeDocuments[id].doc = doc; // save doc for later
-      // Get initial value of document and subscribe to changes
-      doc.subscribe(initializeDoc);
-      doc.on('op', updateClients);
-
-      function initializeDoc() {
-        // Doc is subscribed, initial value should be present
-        console.log(`Doc subscribed, initializing doc...`);
-        console.log(doc.data); 
-        if (!doc.data) {
-          // Doc doesn't already exist on server, create new one
-          console.log(`Doc doesn't already exist, Creating new one...`);
-          doc.create([{insert: 'Lorem'}], 'http://sharejs.org/types/rich-text/v1')
-          console.log("Doc created.");
-          console.log(doc.data);
-          //doc.submitOp([{retain: 5}, {insert: ' ipsum'}])
-        } else {
-          // Doc already exists on server
-          console.log(`Doc already exists on server`);
-          console.log(doc.data);
-        }
-        activeDocuments[id].doc = doc; // Save doc for later, doc is now initialized
-        createStream();
+    function initializeConnection() {
+      // Doc is subscribed, initial value should be present
+      console.log(`Doc subscribed, initializing doc...`);
+      if (!doc.type) {
+        console.log("Doc doesnt exist for some reason. Error.")
+        return res.status(200).json({
+          error: true,
+          message: "Doc doesnt exist for some reason."
+        });
       }
-
-      // When document changes (by this client or any other, or the server),
-      // update the oplist
-      function updateClients() {
-          console.log(doc.data); 
-          const data = `data: ${doc.data}\n\n`;
-          // Loop through all clients and write to each
-          clients.forEach(client => {
-            res.write(data); // Return updated data to client
-          });
-          
-          //doc.submitOp([{p: ['numClicks'], na: 1}]);
-      };
-    } else {
-      // Doc already exists locally, use existing doc
-      let doc = activeDocuments[id].doc
+      console.log(`Doc exists on server`);
+      //console.log(doc.data.ops);
+      //console.log(doc);
+      if (!activeDocuments[docid]) { // if doc was inactive
+        activeDocuments[docid] = []; // setup client tracking
+        activeDocuments[docid].version = doc.version; // setup version tracking
+      }
+      //activeDocuments[docid].doc = doc; // Save doc for later, doc is now initialized
       createStream();
-    }*/
+    }
 
     function createStream() {
       // Create HTTP Event Stream
@@ -135,25 +104,29 @@ connect = async (req,res) => {
       //console.log(connection);
       //console.log(doc);
       const client = {
-        socket,
         connection,
         doc,
         res
       };
-      clients[id] = client;
-      console.log("Connected new client: " + id);
+      activeDocuments[docid][uid] = client;
+      console.log(`Connected new client: docid:${docid} uid:${uid}`);
       console.log(doc.data.ops);
       // Send initial oplist (CORRECT)
-      let data = `data: {"content": ${JSON.stringify(doc.data.ops)}}\n\n`;
+      let data = `data: {"content": ${JSON.stringify(doc.data.ops)}, "version": ${doc.version}}\n\n`;
       res.write(data);
       console.log(data);
 
       // Manage client close connection
       req.on('close', () => {
-          console.log(`Connection closed: ${id}`);
-          if (clients[id]) {
+          console.log(`Connection closed: docid:${docid} uid:${uid}`);
+          if (activeDocuments[docid][uid]) {
             //clients[id].socket.close();
             //clients[id].res.send();
+            // TODO
+            //activeDocuments[docid][uid].doc.unsubscribe();
+            //activeDocuments[docid][uid].connection.close();
+            //activeDocuments[docid][uid].res.send();
+            //activeDocuments[docid][uid] = null;
           }
           
           //delete clients[id];
@@ -170,60 +143,65 @@ connect = async (req,res) => {
 
 // { version, op }  { status }
 // Submit a new Delta op for document with given version.
-op = async (req,res) => {
+op = (req,res) => { // NOT ASYNC, if problems occur make it async again
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
-    const id = req.params.id;
+    const { docid, uid } = req.params;
     console.log("Function: Op received:" )
-    if (!clients[id]) { // Check if valid id
-      console.log(`Invalid Id for Op ${id}`);
-      return res.status(400).send();
-    }
-    //console.log(req.body)
-    if (req.body) {
-      //doc.submitOp([{p: ['numClicks'], na: 1}]);
-      /*ops = [
-        [{'retain': 5}, {'insert': 'a'}],
-        [{'retain': 4}, {'delete': 10}],
-        [{'insert': 'Hello', 'attributes': {'bold': true}}]
-      ];*/
-      ops = req.body;
-      //newops = [].concat(...ops);
-      ops.forEach(element => {
-        console.log(element);
-        clients[id].doc.submitOp(element);
+    if (!activeDocuments[docid] || !activeDocuments[docid][uid] || !req.body) { // Check if valid id
+      console.log(`activeDocuments[docid]:${activeDocuments[docid]}`);
+      //console.log(`activeDocuments[docid][uid]:${activeDocuments[docid][uid]}`);
+      return res.status(200).json({
+        error: true,
+        message: `Invalid inputs for Op: docid:${docid} id:${uid}`
       });
-      //clients[id].doc.submitOp(newops);
-      //console.log(newops);
-      console.log("Op Submitted" )
-      //console.log(JSON.stringify(ops));
-      /*ops.forEach(op => {
-        doc.submitOp(op);
-      });*/
-      //doc.submitOp(); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
-      //doc.submitOp([{retain: 5}, {insert: ' ipsum'}]); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
-      return res.status(200).send();
-    } else {
-      return res.status(400).send();
     }
-    
+    //activeDocuments[docid][uid].doc.submitOp([{retain: 5}, {insert: ' ipsum'}]);
+    /*ops = [
+      [{'retain': 5}, {'insert': 'a'}],
+      [{'retain': 4}, {'delete': 10}],
+      [{'insert': 'Hello', 'attributes': {'bold': true}}]
+    ];*/
+    const { version, op } = req.body;
+
+    // Check if version is synced
+    if (version !== activeDocuments[docid].version) {
+      console.log(`Op not Submitted, invalid version, retry. version:${version} docversion: ${activeDocuments[docid].version}`);
+      return res.status(200).json({
+        status: "retry"
+      });
+    }
+
+    // Version in sync, submit op and update version
+    console.log(op);
+    activeDocuments[docid][uid].doc.submitOp(op);
+    activeDocuments[docid].version += 1;
+    console.log("Op Submitted" )
+    //doc.submitOp(); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
+    //doc.submitOp([{retain: 5}, {insert: ' ipsum'}]); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
+    return res.status(200).json({
+      status: "ok"
+    });
 }    
 
 // ...          (html)
 // Return the HTML of the current document.
 getDoc = async (req,res) => {
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
-    const id = req.params.id;
+    const { docid, uid } = req.params;
     console.log("Get Doc")
     //console.log(clients[id])
-    if (!clients[id]) { // Check if valid id
-      console.log(clients[id])
-      console.log("invalid id")
-      return res.status(400).send();
+    if (!activeDocuments[docid] || !activeDocuments[docid][uid]) { // Check if valid id
+      console.log(`activeDocuments[docid]: ${activeDocuments[docid]}`)
+      console.log("invalid input")
+      return res.status(200).json({
+        error: true,
+        message: "Invalid input"
+      });
     }
 
     var cfg = {};
 
-    var converter = new QuillDeltaToHtmlConverter(clients[id].doc.data.ops, cfg);
+    var converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, cfg);
 
     html = converter.convert(); 
     return res.status(200).send(html);

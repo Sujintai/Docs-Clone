@@ -15,10 +15,10 @@ function authManager() {
                 console.log("Error: no token in cookies")
                 res.append('X-CSE356', '61fa16dc73ba724f297dba00')
                 return res.status(200).json({ // Return Unauthorized
-                    status: "ERROR",
+                    error: true,
                     loggedIn: false,
                     user: null,
-                    errorMessage: "Unauthorized - no token"
+                    message: "Unauthorized - no token"
                 })
             }
             // Token is Included. Check if token is signed by our key.
@@ -30,8 +30,8 @@ function authManager() {
             console.error(err);
             res.append('X-CSE356', '61fa16dc73ba724f297dba00')
             return res.status(200).json({
-                status: "ERROR",
-                errorMessage: "Unauthorized"
+                error: true,
+                message: "Unauthorized"
             });
         }
     }
