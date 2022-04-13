@@ -1,5 +1,6 @@
 const Doc = require('../models/doc-model');
 const Docname = require("../models/docname-model");
+const User = require("../models/user-model");
 const WebSocket = require('ws');
 var sharedb = require('sharedb/lib/client');
 const richText = require('rich-text')
@@ -23,8 +24,9 @@ connect = async (req,res) => {
     let connection = new sharedb.Connection(socket);
     let doc = connection.get('docs', docid);
     let presence = connection.getDocPresence('docs', docid);
+    let localPresence = presence.create(uid);
 
-    doc.subscribe(initializeConnection);
+    doc.subscribe(initializePresence);
     
 
     // When document changes (by this client or any other, or the server),
@@ -48,28 +50,24 @@ connect = async (req,res) => {
     
     function initializePresence() {
       // Doc is subscribed, initial value should be present
-      console.log(`Doc subscribed, initializing doc...`);
-      if (!doc.type) {
-        console.log("Doc doesnt exist for some reason. Error.")
-        return res.status(200).json({
-          error: true,
-          message: "Doc doesnt exist for some reason."
-        });
-      }
-      console.log(`Doc exists on server`);
-      //console.log(doc.data.ops);
-      //console.log(doc);
-      if (!activeDocuments[docid]) { // if doc was inactive
-        activeDocuments[docid] = []; // setup client tracking
-        activeDocuments[docid].version = doc.version; // setup version tracking
-      }
-      //activeDocuments[docid].doc = doc; // Save doc for later, doc is now initialized
-      createStream();
+      console.log(`Doc subscribed, initializing presence...`);
+      presence.subscribe(initializeConnection);
+
+      // When presence changes
+      presence.on('receive', function(id, value) { 
+        console.log(`id:${id} value:${value}`)
+        let presence = {
+          id,
+          cursor: value
+        };
+        const data = `data: {presence: ${JSON.stringify(presence)}}\n\n`;
+        //res.write(data); // Return ack data to client
+      });
     }
 
     function initializeConnection() {
       // Doc is subscribed, initial value should be present
-      console.log(`Doc subscribed, initializing doc...`);
+      console.log(`Presence subscribed, initializing doc...`);
       if (!doc.type) {
         console.log("Doc doesnt exist for some reason. Error.")
         return res.status(200).json({
@@ -88,7 +86,7 @@ connect = async (req,res) => {
       createStream();
     }
 
-    function createStream() {
+    async function createStream() {
       // Create HTTP Event Stream
       const headers = {
         'Content-Type': 'text/event-stream',
@@ -98,14 +96,15 @@ connect = async (req,res) => {
       res.writeHead(200, headers);
       
       // Track new client
-      //clientId = Math.random().toString(36).substring(2);
-      //clientId = id;
-      //console.log(socket);
-      //console.log(connection);
-      //console.log(doc);
+      let currentUser = await User.findOne({ _id: req.userId });
+      let name = currentUser.name;
+      //console.log(`User's name: ${name}`); // Get user's name
       const client = {
         connection,
         doc,
+        presence,
+        localPresence,
+        name,
         res
       };
       activeDocuments[docid][uid] = client;
@@ -124,7 +123,7 @@ connect = async (req,res) => {
             //clients[id].res.send();
             // TODO
             //activeDocuments[docid][uid].doc.unsubscribe();
-            //activeDocuments[docid][uid].connection.close();
+            //activeDocuments[docid][uid].doc.connection.close();
             //activeDocuments[docid][uid].res.send();
             //activeDocuments[docid][uid] = null;
           }
@@ -173,15 +172,56 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again
 
     // Version in sync, submit op and update version
     console.log(op);
+    console.log("Submitting Op" )
     activeDocuments[docid][uid].doc.submitOp(op);
     activeDocuments[docid].version += 1;
-    console.log("Op Submitted" )
+   
     //doc.submitOp(); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
     //doc.submitOp([{retain: 5}, {insert: ' ipsum'}]); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
     return res.status(200).json({
       status: "ok"
     });
 }    
+
+//   { index, length }   {} 
+// Submit a new cursor location index and selection length.
+// The presence object is of the form { id, cursor } where cursor is of the form 
+// { index, length, name }, corresponding to the UID of the document session that
+// sent the cursor, the cursor index, selection length, and name of the user of the
+// corresponding document session.
+presence = async (req,res) => {
+  res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
+  const { docid, uid } = req.params;
+  console.log("Function: Presence received:" )
+    if (!activeDocuments[docid] || !activeDocuments[docid][uid] || !req.body) { // Check if valid id
+      console.log(`activeDocuments[docid]:${activeDocuments[docid]}`);
+      //console.log(`activeDocuments[docid][uid]:${activeDocuments[docid][uid]}`);
+      return res.status(200).json({
+        error: true,
+        message: `Invalid inputs for Presence: docid:${docid} id:${uid}`
+      });
+    }
+
+  if (!req.body.index || !req.body.length) {
+    console.log(`Invalid input body index:${req.body.index} length:${req.body.length}`)
+    return res.status(200).json({
+      error: true,
+      message: "Invalid input body"
+    });
+  }
+
+  // Valid inputs
+  const { index, length } = req.body;
+  let name = activeDocuments[docid][uid].name;
+  console.log("Submitting Presence" )
+  activeDocuments[docid][uid].localPresence.submit({ index, length, name });
+  
+  //doc.submitOp(); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
+  //doc.submitOp([{retain: 5}, {insert: ' ipsum'}]); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
+  return res.status(200).json({
+    status: "ok"
+  });
+}   
 
 // ...          (html)
 // Return the HTML of the current document.
@@ -205,27 +245,6 @@ getDoc = async (req,res) => {
 
     html = converter.convert(); 
     return res.status(200).send(html);
-}   
-
-//   { index, length }   {} 
-// Submit a new cursor location index and selection length.
-presence = async (req,res) => {
-  res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
-  const id = req.params.id;
-  console.log("Get Doc")
-  //console.log(clients[id])
-  if (!clients[id]) { // Check if valid id
-    console.log(clients[id])
-    console.log("invalid id")
-    return res.status(400).send();
-  }
-
-  var cfg = {};
-
-  var converter = new QuillDeltaToHtmlConverter(clients[id].doc.data.ops, cfg);
-
-  html = converter.convert(); 
-  return res.status(200).send(html);
 }   
 
 //  (file)     { mediaid }
