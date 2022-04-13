@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Doc = require('../models/doc-model');
+const Docname = require('../models/docname-model');
 const sharedb = require('sharedb/lib/client');
 const richText = require('rich-text');
 sharedb.types.register(richText.type);
@@ -14,9 +15,21 @@ createDoc = async (req,res) => {
         })
     }
     let name = req.body.name;
+
+    console.log("Create Doc:")
     
+    /*
+    // Create initial doc in mongo
+    let newDoc = await Doc.create({ name:name });
+    let docid = newDoc._id;
+    //console.log(newDoc);
+    */
+
+    // Create doc in sharedb using mongo docid
+    let docid = mongoose.Types.ObjectId().toString(); // Generate docid as STRING
+    console.log("Doc id %s", docid)
     let connection = new sharedb.Connection(socket);
-    let doc = connection.get('docs', name);
+    let doc = connection.get('docs', docid);
     doc.fetch(initializeDoc);
     async function initializeDoc() {
         // Doc is fetched, initial value should be present
@@ -25,28 +38,38 @@ createDoc = async (req,res) => {
           // Doc doesn't already exist on server, create new one
           console.log(`Doc doesn't already exist, Creating new one...`);
           doc.create([{insert: ''}], 'http://sharejs.org/types/rich-text/v1', async () => {
-            let savedDoc = await Doc.findOne({ _id: name });
+            let savedDoc = await Doc.findOne({ _id: docid });
             if (!savedDoc) {
                 return res.status(200).json({
                     error: true,
                     message: "Doc created, but not found in db for some reason."
                 })
             }
+            // Add docname to mongo docname pairs
+            let docnamepair = new Docname({ name, id: docid });
+            let savedDocnamepair = await docnamepair.save();
+            if (!savedDocnamepair) {
+                return res.status(200).json({
+                    error: true,
+                    message: "Doc created in sharedb, but not saved in docnames."
+                })
+            }
             console.log("Doc created.");
             console.log(doc.data.ops);
+            //doc.submitOp([{retain: 5}, {insert: ' ipsum'}])
             return res.status(200).json({
                 message: "Doc created.",
-                docid: savedDoc._o
+                docid: savedDoc._id
             });
           })
           
         } else {
           // Doc already exists on server
-          console.log(`Doc already exists on server`);
+          console.log(`Doc already exists on server. This shouldnt happen at all.`);
           console.log(doc.data.ops);
           return res.status(200).json({
             error: true,
-            message: "Doc already exists"
+            message: "Doc already exists. This shouldnt happen at all."
           })
         }
         //activeDocuments[id].doc = doc; // Save doc for later, doc is now initialized
@@ -63,33 +86,53 @@ deleteDoc = async (req,res) => {
         })
     }
     let docid = req.body.docid;
-    console.log("hi")
+    console.log("Delete Doc:")
     try {
-        let objectid = mongoose.Types.ObjectId(docid);
-        let docToDelete = await Doc.findOne({ _o:objectid });
+        // Get Doc from Mongo
+        let docToDelete = await Doc.findOne({ _id: docid });
         if (!docToDelete) {
+            // Doc not found in mongo
             return res.status(200).json({
                 error: true,
                 message: "Bad input"
             })
         }
-
+        // Doc exists in mongo
         let connection = new sharedb.Connection(socket);
         console.log(docToDelete._id)
-        let doc = connection.get('docs', docToDelete._id);
-        doc.destroy(function(error) {
+        let doc = connection.get('docs', docid);
+        //console.log(doc);
+
+        // Delete doc from sharedb
+        doc.destroy(async function(error) {
             if (error) {
+                // Error deleting doc in sharedb
+                console.log("doc.del callback contains error")
                 return res.status(200).json({
                     error: true,
                     message: error
                 })
             } else {
-                return res.status(200).json({
-                    message: "Doc deleted"
-                })
+                // Successfully deleted in sharedb
+                // Delete from mongo
+                deleted = await Doc.deleteOne({ _id: docid});
+                //console.log(deleted)
+                if (!deleted) {
+                    console.log("Error deleting doc from mongo.")
+                    return res.status(200).json({
+                        error: true,
+                        message: "Error deleting doc from mongo."
+                    })
+                } else {
+                    console.log("Doc deleted")
+                    return res.status(200).json({
+                        message: "Doc deleted"
+                    })
+                }
             }
         });
-    } catch {
+    } catch (err) {
+        console.error(err);
         return res.status(200).json({
             error: true,
             message: "Bad input"
@@ -105,21 +148,20 @@ deleteDoc = async (req,res) => {
 // Return a list of the most-recently modified 10 documents sorted in reverse chronological order.
 listDocs = async (req,res) => {
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
-    const id = req.params.id;
-    console.log("Get Doc")
-    //console.log(clients[id])
-    if (!clients[id]) { // Check if valid id
-      console.log(clients[id])
-      console.log("invalid id")
-      return res.status(400).send();
+    console.log("List Docs:")
+    
+    let docs = await Doc.find({}, "_id name").sort({ "_m.mtime": 'desc' }).limit(10)
+    console.log(docs);
+    docsArr = [];
+    for(var i = 0; i < docs.length; i++) {
+        docsArr.push({ 
+            id: docs[i]._id,
+            name: docs[i].name
+        })
     }
-  
-    var cfg = {};
-  
-    var converter = new QuillDeltaToHtmlConverter(clients[id].doc.data.ops, cfg);
-  
-    html = converter.convert(); 
-    return res.status(200).send(html);
+    return res.status(200).json(
+        docsArr
+    )
   }   
 
 module.exports = {

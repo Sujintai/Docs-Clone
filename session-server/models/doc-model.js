@@ -3,11 +3,12 @@ const Schema = mongoose.Schema
 
 const DocSchema = new Schema(
     {
-        _id: { type: String },
-        grid: { type: [String], required: true },
-        winner: { type: String, required: true }, 
-        start_date: { type: Date, default: Date.now() },
-        _o: { type: Schema.Types.ObjectId }
+        _id: String,
+        _o: { type: Schema.Types.ObjectId },
+        _m: {
+            ctime: Number,
+            mtime: Number
+        }
     },
     { timestamps: true },
 )

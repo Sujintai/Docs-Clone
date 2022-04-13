@@ -1,4 +1,4 @@
-const Doc = require("../models/doc-model");
+const Docname = require("../models/docname-model");
 const WebSocket = require('ws');
 var sharedb = require('sharedb/lib/client');
 const richText = require('rich-text')
@@ -13,10 +13,11 @@ connect = async (req,res) => {
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
     const id = req.params.id;
 
-    // SETUP OT SOCKETS
+    // Add user to session manager
+    // SETUP OT Connection for user
     // Open WebSocket connection to ShareDB server
     //var socket = new ReconnectingWebSocket('ws://' + window.location.host);
-    let socket = new WebSocket('ws://localhost:8080');
+    //let socket = new WebSocket('ws://localhost:8080');
     let connection = new sharedb.Connection(socket);
     let doc = connection.get('documents', 'dog');
     doc.subscribe(initializeDoc);
