@@ -1,6 +1,7 @@
 const auth = require('../auth')
 const User = require('../models/user-model')
 const bcrypt = require('bcryptjs')
+const nodemailer = require('nodemailer')
 
 //  { email, password }      { name }
 loginUser = async (req, res) => {
@@ -113,12 +114,31 @@ registerUser = async (req, res) => {
         console.log("Registered User: %s", savedUser.name);
 
         // Send email with verification code
-        // - Not completed
-        /**
-         *    TODO
-         * 
-         *  */ 
+        var transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: 'bananaweeeee@gmail.com',
+            pass: 'Dogdog123'
+        }
+        });
 
+        var mailOptions = {
+            from: 'bananaweeeee@gmail.com',
+            to: email,
+            subject: 'CSE356 - Verify Email',
+            text: 'http://localhost:4000/users/verify?_id=' + savedUser._id + "&key=" + savedUser.verificationCode
+        };
+
+        transporter.sendMail(mailOptions, function(error, info){
+            if (error) {
+                console.log(error);
+                return res.status(400).json({
+                    errorMessage: "Error sending mail"
+                })
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        });
 
         return res.status(200).json({
             status: "OK",

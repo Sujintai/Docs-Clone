@@ -1,3 +1,4 @@
+const Doc = require('../models/doc-model');
 const Docname = require("../models/docname-model");
 const WebSocket = require('ws');
 var sharedb = require('sharedb/lib/client');
