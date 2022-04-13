@@ -98,12 +98,12 @@ deleteDoc = async (req,res) => {
             })
         }
         // Doc exists in mongo
+
+        // Delete doc from sharedb
         let connection = new sharedb.Connection(socket);
         console.log(docToDelete._id)
         let doc = connection.get('docs', docid);
         //console.log(doc);
-
-        // Delete doc from sharedb
         doc.destroy(async function(error) {
             if (error) {
                 // Error deleting doc in sharedb
@@ -115,9 +115,10 @@ deleteDoc = async (req,res) => {
             } else {
                 // Successfully deleted in sharedb
                 // Delete from mongo
-                deleted = await Doc.deleteOne({ _id: docid});
+                deleted = await Doc.deleteOne({ _id: docid}); // Delete actual doc
+                deletedname = await Docname.deleteOne({ id: docid}); // Delete namepair
                 //console.log(deleted)
-                if (!deleted) {
+                if (!deleted || !deletedname) {
                     console.log("Error deleting doc from mongo.")
                     return res.status(200).json({
                         error: true,
@@ -150,15 +151,14 @@ listDocs = async (req,res) => {
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
     console.log("List Docs:")
     
-    let docs = await Doc.find({}, "_id name").sort({ "_m.mtime": 'desc' }).limit(10)
-    console.log(docs);
-    docsArr = [];
+    // Find 10 most recent docs sorted by most recent
+    let docs = await Doc.find({}, "_id").sort({ "_m.mtime": 'desc' }).limit(10);
+    let docsArr = [];
     for(var i = 0; i < docs.length; i++) {
-        docsArr.push({ 
-            id: docs[i]._id,
-            name: docs[i].name
-        })
-    }
+        // Find and append each docname pair
+        let docnamepair = await Docname.findOne({ id: docs[i]._id }, "id name");
+        docsArr.push(docnamepair);
+    } 
     return res.status(200).json(
         docsArr
     )
