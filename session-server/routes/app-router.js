@@ -13,7 +13,7 @@ router.get("/", function(req, res) {
 router.get("/dist/bundle.js", function(req, res) {
   res.sendFile(path.join(__dirname, 'static/dist/bundle.js'));
 });
-// 
+
 
 router.post('/users/login', UserController.loginUser)
 router.post('/users/logout', UserController.logoutUser)
@@ -34,7 +34,9 @@ router.get('/doc/connect/:docid/:uid', auth.verify, AppController.connect) // Ne
 router.post('/doc/op/:docid/:uid', auth.verify, AppController.op) // Implement presence, list of users and cursor locations
 router.post('/doc/presence/:docid/:uid', auth.verify, AppController.presence) // TODO
 router.get('/doc/get/:docid/:uid', auth.verify, AppController.getDoc) // Needs modification
-// router.get(/home) (html+js)
+router.get('/home', auth.verify, function(req,res) {
+  res.sendFile(path.join(__dirname, 'static/home.html'));
+});
 // logged in users, links to /doc/edit/DOCID for the most-recently modified 10 documents along with "delete" links for them, a form field to create new documents (via the /collection/create call), and a Logout button.
 
 
