@@ -3,7 +3,8 @@ const express = require('express')  // Web Server
 const cors = require('cors')  // Cross origin resource sharing, Security policy
 const dotenv = require('dotenv')
 const cookieParser = require('cookie-parser')
-
+const multer  = require('multer'); // image upload
+const path = require('path');
 
 const WebSocket = require('ws');
 const sharedb = require('sharedb/lib/client');
@@ -39,6 +40,19 @@ sessionManager[hash] = {
   socket,
   activeDocuments: []
 }
+
+// SETUP FILE UPLOADER
+let storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + Date.now() + path.extname(file.originalname))
+  }
+})
+upload = multer({ storage: storage })
+app.use(express.static(__dirname + '/public'));
+app.use('/uploads', express.static('uploads'));
 
 // SETUP OUR OWN ROUTERS AS MIDDLEWARE
 const appRouter = require('./routes/app-router');

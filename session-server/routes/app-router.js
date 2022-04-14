@@ -24,7 +24,7 @@ router.post('/collection/create', auth.verify, CollectionController.createDoc) /
 router.post('/collection/delete', auth.verify, CollectionController.deleteDoc) // TODO
 router.get('/collection/list', auth.verify, CollectionController.listDocs) // TODO
 
-router.post('/media/upload', auth.verify, AppController.mediaUpload) // TODO
+router.post('/media/upload', auth.verify, upload.any(), AppController.mediaUpload) // TODO
 router.get('/media/access/:mediaid', auth.verify, AppController.mediaAccess) // TODO
 
 // router.get(/doc/edit/:docid) (html+js)

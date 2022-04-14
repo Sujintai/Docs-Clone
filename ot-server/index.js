@@ -8,7 +8,7 @@ const richText = require('rich-text')
 
 Backend.types.register(richText.type)
 const db = require('sharedb-mongo')('mongodb://localhost:27017/docsclone');
-var backend = new Backend({db});
+var backend = new Backend({db, presence: true});
 var connection = backend.connect();
 
 // Create a web server to serve files and listen to WebSocket connections
