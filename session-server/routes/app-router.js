@@ -8,11 +8,11 @@ const router = express.Router()
 const path = require('path');
 
 router.get("/", function(req, res) {
-    res.sendFile(path.join(__dirname, 'static/index.html'));
-  });
-  router.get("/dist/bundle.js", function(req, res) {
-    res.sendFile(path.join(__dirname, 'static/dist/bundle.js'));
-  });
+  res.sendFile(path.join(__dirname, 'static/index.html'));
+});
+router.get("/dist/bundle.js", function(req, res) {
+  res.sendFile(path.join(__dirname, 'static/dist/bundle.js'));
+});
 // 
 
 router.post('/users/login', UserController.loginUser)
@@ -27,7 +27,9 @@ router.get('/collection/list', auth.verify, CollectionController.listDocs) // TO
 router.post('/media/upload', auth.verify, upload.any(), AppController.mediaUpload) // TODO
 router.get('/media/access/:mediaid', auth.verify, AppController.mediaAccess) // TODO
 
-// router.get(/doc/edit/:docid) (html+js)
+router.get('/doc/edit/:docid', auth.verify, function(req,res) {
+  res.sendFile(path.join(__dirname, 'static/index.html'));
+});
 router.get('/doc/connect/:docid/:uid', auth.verify, AppController.connect) // Needs modification
 router.post('/doc/op/:docid/:uid', auth.verify, AppController.op) // Implement presence, list of users and cursor locations
 router.post('/doc/presence/:docid/:uid', auth.verify, AppController.presence) // TODO

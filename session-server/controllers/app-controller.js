@@ -289,6 +289,12 @@ mediaAccess = async (req,res) => {
   
   // Get image data
   let media = await Media.findOne({ _id: mediaid });
+  if (!media) {
+    return res.status(200).json({
+      error: true,
+      message: "Invalid id"
+    });
+  }
   console.log(media);
   res.contentType(media.mimetype);
   res.sendFile(path.join(__dirname, '..', 'uploads', media.filename));
