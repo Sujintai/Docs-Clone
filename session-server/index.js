@@ -50,7 +50,19 @@ let storage = multer.diskStorage({
     cb(null, file.fieldname + Date.now() + path.extname(file.originalname))
   }
 })
-upload = multer({ storage: storage })
+upload = multer({ 
+  storage: storage,
+  fileFilter: function (req, file, callback) {
+    var ext = path.extname(file.originalname).toLowerCase();
+    if(ext !== '.png' && ext !== '.jpg' && ext !== '.gif' && ext !== '.jpeg') {
+        return callback(null, false)
+    }
+    callback(null, true)
+  },
+  limits:{
+      fileSize: 1024 * 1024
+  }
+});
 app.use(express.static(__dirname + '/public'));
 app.use('/uploads', express.static('uploads'));
 
@@ -63,7 +75,7 @@ const db = require('./db')
 db.on('error', console.error.bind(console, 'MongoDB connection error:'))
 
 // PUT THE SERVER IN LISTENING MODE
-const apiPort = 4000
-app.listen(apiPort, () => console.log(`Server running on port ${apiPort}`))
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
 
 

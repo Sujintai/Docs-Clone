@@ -8,7 +8,7 @@ const router = express.Router()
 const path = require('path');
 
 router.get("/", function(req, res) {
-  res.sendFile(path.join(__dirname, 'static/index.html'));
+  res.sendFile(path.join(__dirname, 'static/home.html'));
 });
 router.get("/dist/bundle.js", function(req, res) {
   res.sendFile(path.join(__dirname, 'static/dist/bundle.js'));

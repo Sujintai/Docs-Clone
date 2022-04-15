@@ -6,9 +6,7 @@ function authManager() {
     verify = function (req, res, next) {
         //res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
         
-        console.log("Verify cookie['token']: %s", JSON.stringify(req.cookies['token']))
-        //console.log("Verify cookie: %s", JSON.stringify(req.cookies))
-        //console.log("Headers: %s", JSON.stringify(req.headers))
+        //console.log("Verify cookie['token']: %s", JSON.stringify(req.cookies['token']))
         try {
             const token = req.cookies.token;
             if (!token) { // If token is not included in request cookies

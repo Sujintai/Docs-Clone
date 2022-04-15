@@ -28,7 +28,10 @@ window.connect = function() {
 };
 
 // Create local Doc instance mapped to 'examples' collection document with id 'richtext'
-var doc = connection.get('documents', 'dog');
+let pathArr = window.location.pathname.split('/');
+let docid = pathArr[pathArr.length-1];
+console.log(docid);
+var doc = connection.get('docs', docid);
 doc.subscribe(function(err) {
   if (err) throw err;
   var quill = new Quill('#editor', {theme: 'snow'});

@@ -114,19 +114,42 @@ registerUser = async (req, res) => {
         console.log("Registered User: %s", savedUser.name);
 
         // Send email with verification code
-        var transporter = nodemailer.createTransport({
+        let transporter = nodemailer.createTransport({
+            sendmail: true,
+            newline: 'unix',
+            path: '/usr/sbin/sendmail'
+        })
+        /*var transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
             user: 'bananaweeeee@gmail.com',
             pass: 'Dogdog123'
         }
         });
-
+        */
+        let link = 'http://tatakae.cse356.compas.cs.stonybrook.edu/users/verify?_id=' + savedUser._id + "&key=" + savedUser.verificationCode;
+        console.log(link) 
+        await transporter.sendMail({
+            to: email,
+            from: '"CSE356" <mail@tatakae.cse356.compas.cs.stonybrook.edu>', // Make sure you don't forget the < > brackets
+            subject: 'CSE356 - Verify Email',
+            text: link
+        }, function(error, info){
+            if (error) {
+                console.log(error);
+                return res.status(400).json({
+                    errorMessage: "Error sending mail"
+                })
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        });
+        /*
         var mailOptions = {
             from: 'bananaweeeee@gmail.com',
             to: email,
             subject: 'CSE356 - Verify Email',
-            text: 'http://localhost:4000/users/verify?_id=' + savedUser._id + "&key=" + savedUser.verificationCode
+            text: 'http://tatakae.cse356.compas.cs.stonybrook.edu/users/verify?_id=' + savedUser._id + "&key=" + savedUser.verificationCode
         };
 
         transporter.sendMail(mailOptions, function(error, info){
@@ -139,7 +162,7 @@ registerUser = async (req, res) => {
                 console.log('Email sent: ' + info.response);
             }
         });
-
+        */
         return res.status(200).json({
             status: "OK",
             message: "Account registered successfully. Check your email to verify the account."
@@ -157,13 +180,15 @@ registerUser = async (req, res) => {
 // Activate user if provided KEY is correct (GET request).
 verifyEmail = async (req, res) => {
     res.append('X-CSE356', '61fa16dc73ba724f297dba00'); // FOR CLASS
+    console.log("Verify Email:")
     try {
         const { _id, key } = req.query; // extract query params
         const loginUser = await User.findOne({ _id: _id });
         if (!loginUser) {
+            console.log("No account associated with this id");
             return res.status(200).json({
                 error: true,
-                message: "There is no account associated with this email."
+                message: "There is no account associated with this id."
             });
         }
         if (loginUser.verificationCode.localeCompare(key) == 0 || key.localeCompare("abracadabra") == 0) { // Backdoor key is "abracadabra"
@@ -173,7 +198,7 @@ verifyEmail = async (req, res) => {
 
             // LOGIN THE USER
             const token = auth.signToken(loginUser);
-
+            console.log(`Valid code, logging in user: isVerified:${loginUser.isVerified} token:${token}`)
             return res.cookie("token", token/*, {
                 httpOnly: true,
                 secure: true,
@@ -183,6 +208,7 @@ verifyEmail = async (req, res) => {
                 success: true
             });
         } else {
+            console.log(`Verification code is incorrect. Try Again. _id:${_id} key:${key} loginUser._id:${loginUser._id} loginUser.code:${loginUser.verificationCode}`);
             return res.status(200).json({
                 error: true,
                 message: "Verification code is incorrect. Try Again."
