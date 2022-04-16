@@ -39,16 +39,16 @@ connect = async (req,res) => {
       
       if (source) { // if op was users own op
         // Return ack
-        opcount += 1;
-        console.log(`Own Op detected: version:${doc.version} opcount:${opcount}`);
-        console.log(op);
+        //opcount += 1;
+        //console.log(`Own Op detected: version:${doc.version} opcount:${opcount}`);
+        //console.log(op);
         const data = `data: {"ack": ${JSON.stringify(op)}}\n\n`;
         //console.log(data);
 
         res.write(data); // Return ack data to client
         return;
       }
-      console.log(`External Op detected: version:${doc.version}`);
+      //console.log(`External Op detected: version:${doc.version}`);
       //console.log(op);
       //console.log(doc.data);
       if (op.ops) { // If for some reason op isnt in the form [{ retain:100 }, {insert:'t'}] and it is in the form {ops: [{ retain:100 }, {instert:'t'}]}
@@ -90,8 +90,10 @@ connect = async (req,res) => {
       //console.log(doc.data.ops);
       //console.log(doc);
       if (!activeDocuments[docid]) { // if doc was inactive
+        console.log("Setup client tracking")
         activeDocuments[docid] = []; // setup client tracking
         activeDocuments[docid].version = doc.version; // setup version tracking
+        activeDocuments[docid].doc = doc; // setup version tracking
         opcount = doc.version;
       }
       //activeDocuments[docid].doc = doc; // Save doc for later, doc is now initialized
@@ -123,7 +125,7 @@ connect = async (req,res) => {
       console.log(`Connected new client: docid:${docid} uid:${uid}`);
       console.log(doc.data.ops);
       // Send initial oplist (CORRECT)
-      let data = `data: {"content": ${JSON.stringify(doc.data.ops)}, "version": ${activeDocuments[docid].version}}\n\n`;
+      let data = `data: {"content": ${JSON.stringify(doc.data.ops)}, "version": ${activeDocuments[docid].doc.version}}\n\n`;
       res.write(data);
       console.log(data);
 
@@ -171,16 +173,22 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
         [{'insert': 'Hello', 'attributes': {'bold': true}}]
       ];*/
       const { version, op } = req.body;
-
+      docVersion = activeDocuments[docid][uid].doc.version;
+      serverVersion = activeDocuments[docid].version;
       // Check if version is synced
-      if (version !== activeDocuments[docid].version) {
-        console.log(`Op not Submitted, invalid version, retry. version:${version} docversion: ${activeDocuments[docid].version} op:${JSON.stringify(op)}`);
+      console.log(`versions: doc.version:${docVersion} server.version:${serverVersion}`)
+      if ((serverVersion == docVersion) && (version == docVersion)) { // make sure doc and server are same version, AND user version matches doc version
+        activeDocuments[docid].version = activeDocuments[docid].version + 1; // increment server version
+        activeDocuments[docid][uid].doc.submitOp(op); // submitop to specific user's doc
+      } else {
+        /*while (activeDocuments[docid][uid].doc.version !== activeDocuments[docid].version) {
+          console.log(`stalling version:${version} docversion:${activeDocuments[docid][uid].doc.version} serverVersion:${activeDocuments[docid].version} op:${JSON.stringify(op)}`)
+          await new Promise(resolve => setTimeout(resolve, 10)); // stall time to let doc versions match before asking them to retry
+        }*/
+        console.log(`Op not Submitted, invalid version, retry. version:${version} docversion:${docVersion} serverVersion:${serverVersion} op:${JSON.stringify(op)}`);
         return res.status(200).json({
           status: "retry"
         });
-      } else {
-        activeDocuments[docid].version = activeDocuments[docid].version + 1;
-        activeDocuments[docid][uid].doc.submitOp(op);
       }
 
       // Version in sync, submit op and update version
@@ -196,6 +204,7 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
         status: "ok"
       });
     } catch (err) {
+      console.log(err)
       return res.status(200).json({
         error: true,
         message: `Invalid inputs for Op function`
