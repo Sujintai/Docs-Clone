@@ -11,12 +11,12 @@ const DocnameSchema = new Schema(
     { timestamps: true },
 )
 
-DocnameSchema.plugin(mongoosastic, {
+DocnameSchema.plugin(mongoosastic/*, {
     clientOptions: {
       nodes: [
-        '194.113.74.36:9200'
+        'http://194.113.74.36'
       ]
     }
-})
+}*/)
 
 module.exports = mongoose.model('Docname', DocnameSchema)
