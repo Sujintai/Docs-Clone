@@ -4,7 +4,8 @@ const Schema = mongoose.Schema
 const DocnameSchema = new Schema(
     {
         name: String,
-        id: String
+        id: String,
+        content: String
     },
     { timestamps: true },
 )

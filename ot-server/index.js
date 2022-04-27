@@ -8,6 +8,8 @@ const richText = require('rich-text')
 
 Backend.types.register(richText.type)
 const db = require('sharedb-mongo')('mongodb://localhost:27017/docsclone');
+//const db = require('sharedb-mongo')('mongodb+srv://tatakae:tatakae@cluster0.sra41.mongodb.net/docsclone?retryWrites=true&w=majority');
+
 var backend = new Backend({db, presence: true});
 var connection = backend.connect();
 

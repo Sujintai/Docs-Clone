@@ -46,7 +46,7 @@ createDoc = async (req,res) => {
                 })
             }
             // Add docname to mongo docname pairs
-            let docnamepair = new Docname({ name, id: docid });
+            let docnamepair = new Docname({ name, id: docid , content:""});
             let savedDocnamepair = await docnamepair.save();
             if (!savedDocnamepair) {
                 return res.status(200).json({
