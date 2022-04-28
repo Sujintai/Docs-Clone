@@ -311,7 +311,7 @@ mediaUpload = async (req,res) => {
   });
   let savedMedia = await newMedia.save();
   return res.status(200).json({
-    mediaid: savedMedia._id
+    mediaid: savedMedia.filename
   });
 } 
 
