@@ -6,20 +6,12 @@ const cookieParser = require('cookie-parser')
 const multer  = require('multer'); // image upload
 const path = require('path');
 
-const { createProxyMiddleware } = require('http-proxy-middleware');
-
 // CREATE OUR SERVER
 dotenv.config();
 const PORT = process.env.PORT || 4000;
 const app = express();
 
-app.use(express.urlencoded({ extended: true, limit: '1mb'}))
-app.use(express.json({limit: '1mb'}));
-app.use(cors({
-  origin: ["http://localhost:3000"],
-  credentials: true
-}))
-app.use(cookieParser())
+
 
 // SETUP FILE UPLOADER
 let storage = multer.diskStorage({
@@ -46,9 +38,21 @@ upload = multer({
 app.use(express.static(__dirname + '/public'));
 app.use('/uploads', express.static('uploads'));
 
+app.use(cookieParser());
+
 // SETUP OUR OWN ROUTERS AS MIDDLEWARE
 const appRouter = require('./routes/app-router');
 app.use('/', appRouter)
+
+// THESE NEED TO BE AFTER (app.use('/', appRouter)) IN ORDER FOR PROXY TO WORK DUE TO PARSING. ------- BEGIN ----
+app.use(express.urlencoded({ extended: true, limit: '1mb'}))
+app.use(express.json({limit: '1mb'}));
+app.use(cors({
+  origin: ["http://localhost:3000"],
+  credentials: true
+}))
+// THESE NEED TO BE AFTER ROUTER IN ORDER FOR PROXY TO WORK DUE TO PARSING. ------- END ----
+
 
 // INITIALIZE OUR DATABASE OBJECT
 const db = require('./db')
