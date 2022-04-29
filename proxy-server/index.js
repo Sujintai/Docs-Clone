@@ -6,11 +6,7 @@ const cookieParser = require('cookie-parser')
 const multer  = require('multer'); // image upload
 const path = require('path');
 
-const WebSocket = require('ws');
-const sharedb = require('sharedb/lib/client');
-const richText = require('rich-text')
-sharedb.types.register(richText.type)
-//const ReconnectingWebSocket = require('reconnecting-websocket');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 // CREATE OUR SERVER
 dotenv.config();
@@ -24,22 +20,6 @@ app.use(cors({
   credentials: true
 }))
 app.use(cookieParser())
-
-
-// SETUP OT SOCKETS
-// Open WebSocket connection to ShareDB server
-//var socket = new ReconnectingWebSocket('ws://' + window.location.host);
-socket = new WebSocket('ws://localhost:8080');
-//connection = new sharedb.Connection(socket);
-
-// SETUP SESSION MANAGER
-sessionManager = [];
-let hash = 0; // TODO: Change 0 into hash function for docid
-sessionManager[hash] = { 
-  URL: 'ws://localhost:8080',
-  socket,
-  activeDocuments: []
-}
 
 // SETUP FILE UPLOADER
 let storage = multer.diskStorage({

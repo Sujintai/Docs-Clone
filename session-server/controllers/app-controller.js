@@ -110,8 +110,8 @@ connect = async (req,res) => {
       res.writeHead(200, headers);
       
       // Track new client
-      let currentUser = await User.findOne({ _id: req.userId });
-      let name = currentUser.name;
+      //let currentUser = await User.findOne({ _id: req.userId });
+      let name = req.name;
       //console.log(`User's name: ${name}`); // Get user's name
       const client = {
         connection,
@@ -311,7 +311,7 @@ mediaUpload = async (req,res) => {
   });
   let savedMedia = await newMedia.save();
   return res.status(200).json({
-    mediaid: savedMedia._id
+    mediaid: savedMedia.filename
   });
 } 
 
