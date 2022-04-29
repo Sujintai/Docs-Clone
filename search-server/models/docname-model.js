@@ -5,11 +5,11 @@ const Schema = mongoose.Schema
 const DocnameSchema = new Schema(
     {
         name: { type:String, es_indexed:true },
-        id: String,
+        id: { type:String, es_indexed:true },
         content: { type:String, es_indexed:true }
     },
     { timestamps: true },
-)
+);
 
 DocnameSchema.plugin(mongoosastic/*, {
     clientOptions: {
@@ -17,6 +17,6 @@ DocnameSchema.plugin(mongoosastic/*, {
         'http://194.113.74.36'
       ]
     }
-}*/)
+}*/);
 
 module.exports = mongoose.model('Docname', DocnameSchema)
