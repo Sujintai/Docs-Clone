@@ -3,12 +3,24 @@ const Docname = require("../models/docname-model");
 const User = require("../models/user-model");
 const Media = require("../models/media-model");
 const path = require('path');
+const util = require('util');
+const cycle = require('../cycle/cycle.js');
+const { convert } = require('html-to-text');
 
 const WebSocket = require('ws');
 var sharedb = require('sharedb/lib/client');
 const richText = require('rich-text')
 sharedb.types.register(richText.type)
 QuillDeltaToHtmlConverter = require('quill-delta-to-html').QuillDeltaToHtmlConverter;
+
+// CONNECT REDIS
+const redis = require('redis');
+const redisClient = redis.createClient();
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
+redisClient.on('connect', function() {
+  console.log('Connected to Redis!');
+});
+redisClient.connect();
 
 opcount = 0;
 hash = 0;
@@ -20,6 +32,8 @@ connect = async (req,res) => {
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
     const { docid, uid } = req.params;
     console.log(`Start Connect: ${docid} ${uid}`);
+
+    
 
     // SETUP OT Connection for user
     // Open WebSocket connection to ShareDB server
@@ -76,7 +90,7 @@ connect = async (req,res) => {
       });
     }
 
-    function initializeConnection() {
+    async function initializeConnection() {
       // Doc is subscribed, initial value should be present
       console.log(`Presence subscribed, initializing doc...`);
       if (!doc.type) {
@@ -90,11 +104,14 @@ connect = async (req,res) => {
       //console.log(doc.data.ops);
       //console.log(doc);
       if (!activeDocuments[docid]) { // if doc was inactive
+        let docname = await Docname.findOne({ id:doc.id});
+        console.log(`docname: ${docname}`)
         console.log("Setup client tracking")
         activeDocuments[docid] = []; // setup client tracking
         activeDocuments[docid].version = doc.version; // setup version tracking
         activeDocuments[docid].doc = doc; // setup version tracking
-        opcount = doc.version;
+        activeDocuments[docid].Docname = docname; // Setup search index tracking
+        //opcount = doc.version;
       }
       //activeDocuments[docid].doc = doc; // Save doc for later, doc is now initialized
       createStream();
@@ -122,6 +139,19 @@ connect = async (req,res) => {
         res
       };
       activeDocuments[docid][uid] = client;
+      //console.log(activeDocuments);
+
+      // REDIS
+      /*
+      let rediskey = docid + "," + uid;
+      let decycled = JSON.decycle(doc);
+      console.log(doc);
+      await redisClient.set(rediskey, JSON.stringify(JSON.decycle(doc)));
+      const value = await redisClient.get(rediskey);
+      //let newClient = JSON.retrocycle(JSON.parse(doc));
+      //return client.res.write();
+      //console.log(JSON.retrocycle(JSON.parse(value)));
+      */
       console.log(`Connected new client: docid:${docid} uid:${uid}`);
       console.log(doc.data.ops);
       // Send initial oplist (CORRECT)
@@ -156,11 +186,21 @@ connect = async (req,res) => {
 
 // { version, op }  { status }
 // Submit a new Delta op for document with given version.
-op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1.6pts without async // async might be too fast and cause issues with version
+op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1.6pts without async // async might be too fast and cause issues with version
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
     try {
       const { docid, uid } = req.params;
       console.log(`Function: Op received: by ${uid}` )
+      // REDIS
+      /*
+      let rediskey = docid + "," + uid;
+      let value = await redisClient.get(rediskey);
+      //console.log(value);
+      let redisDoc = JSON.parse(JSON.retrocycle(value));
+      console.log(redisDoc);
+      redisDoc.submitOp(req.body.op)
+      */
+
       /*if (!activeDocuments[docid] || !activeDocuments[docid][uid] || !req.body) { // Check if valid id
         console.log(`activeDocuments[docid]:${activeDocuments[docid]}`);
         //console.log(`activeDocuments[docid][uid]:${activeDocuments[docid][uid]}`);
@@ -179,7 +219,12 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
       console.log(`versions: doc.version:${docVersion} server.version:${serverVersion}`)
       if ((serverVersion == docVersion) && (version == docVersion)) { // make sure doc and server are same version, AND user version matches doc version
         activeDocuments[docid].version = activeDocuments[docid].version + 1; // increment server version
-        activeDocuments[docid][uid].doc.submitOp(op); // submitop to specific user's doc
+        await activeDocuments[docid][uid].doc.submitOp(op); // submitop to specific user's doc
+        // Update search index
+        let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
+        let html = converter.convert(); // Convert ops to html 
+        activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
+        activeDocuments[docid].Docname.save();      
       } else {
         /*while (activeDocuments[docid][uid].doc.version !== activeDocuments[docid].version) {
           console.log(`stalling version:${version} docversion:${activeDocuments[docid][uid].doc.version} serverVersion:${activeDocuments[docid].version} op:${JSON.stringify(op)}`)
