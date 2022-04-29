@@ -25,7 +25,6 @@ app.use(cors({
 }))
 app.use(cookieParser())
 
-
 // SETUP OT SOCKETS
 // Open WebSocket connection to ShareDB server
 //var socket = new ReconnectingWebSocket('ws://' + window.location.host);
