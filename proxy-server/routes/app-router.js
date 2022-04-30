@@ -16,19 +16,34 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const customRouter = function (req) {
     console.log("custom routed:")
     //let hash = crypto.createHash('sha1').update(req.params.docid).digest('base64');
-    let hash = Number("0x" + req.params.docid.slice(-2)) % process.env.NUMBER_OF_SERVERS_OP;
-    console.log(`routed: docid:${req.params.docid} uid:${req.params.uid} to hash:${hash}`)
-    let port = 4000 + hash // new port
+    let hash = Number("0x" + req.params.docid.slice(-2)) % process.env.NUMBER_OF_SERVERS_OP; // Number between 0 to Number_of_servers-1 inclusive
+    let serversPerCluster = process.env.NUMBER_OF_SERVERS_OP / process.env.NUMBER_OF_CLUSTERS_OP;
+    let clusterNumber = Math.floor(hash/serversPerCluster)
+    let port = 4000;
     let address = 'http://209.94.58.107:' + port.toString();
-    console.log(address);
-    return address // protocol + host
-    
+    switch (clusterNumber) {
+      case 0:
+        port = 4000 + hash // new port
+        address = 'http://209.94.58.107:' + port.toString();
+        console.log(`routed: docid:${req.params.docid} uid:${req.params.uid} to hash:${hash} address: ${address}`)
+        return address; // protocol + host
+      case 1:
+        port = 4000 + hash // new port
+        address = 'http://194.113.72.108:' + port.toString();
+        console.log(`routed: docid:${req.params.docid} uid:${req.params.uid} to hash:${hash} address: ${address}`)
+        return address; // protocol + host
+      default:
+        console.log(`Shouldn't happen. No case for proxy`);
+    }
 };
 
 const options = {
   target: 'http://209.94.58.107:4000',
   changeOrigin: true,
-  router: customRouter
+  router: customRouter,
+  onProxyReq: (proxyRes, req, res) => {
+    res.on('close', () => proxyRes.destroy());
+  }
 };
 const myProxy = createProxyMiddleware(options);
 //const opProxy = createProxyMiddleware(options);
