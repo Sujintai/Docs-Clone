@@ -6,6 +6,7 @@ const path = require('path');
 const util = require('util');
 const cycle = require('../cycle/cycle.js');
 const { convert } = require('html-to-text');
+const axios = require('axios');
 
 const WebSocket = require('ws');
 var sharedb = require('sharedb/lib/client');
@@ -164,6 +165,7 @@ connect = async (req,res) => {
       req.on('close', () => {
           console.log(`Connection closed: docid:${docid} uid:${uid}`);
           if (activeDocuments[docid][uid]) {
+            res.end();
             //clients[id].socket.close();
             //clients[id].res.send();
             // TODO
@@ -204,8 +206,11 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
 
       if (!activeDocuments[docid] || !activeDocuments[docid][uid] || !req.body) { // Check if valid id
         console.log(`activeDocuments[docid]:${activeDocuments[docid]}`);
-        console.log(`activeDocuments[docid][uid]:${activeDocuments[docid][uid]}`);
-        
+        //console.log(`activeDocuments[docid][uid]:${activeDocuments[docid][uid]}`);
+        return res.json({
+          error: true,
+          message: `Invalid inputs for Op function`
+        });
       }
       //activeDocuments[docid][uid].doc.submitOp([{retain: 5}, {insert: ' ipsum'}]);
       /*ops = [
@@ -222,7 +227,16 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
         activeDocuments[docid].version = activeDocuments[docid].version + 1; // increment server version
         activeDocuments[docid][uid].doc.submitOp(op, async function(err) {
           // Update search index
-          let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
+          axios({
+            method: 'post',
+            url: process.env.SEARCH_SERVER + '/index/index',
+            headers: {'Content-Type': 'application/json'},
+            data: { docid }
+          }).catch(function (error) {
+            console.log(error);
+          });
+          
+          /*let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
           let html = converter.convert(); // Convert ops to html 
           activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
           try {
@@ -235,18 +249,8 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
           } catch(err) {
             console.log("Error saving docname")
           } 
-          
+          */
         }); // submitop to specific user's doc
-        /*
-        // Update search index
-        async () => {
-          let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
-          let html = converter.convert(); // Convert ops to html 
-          activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
-          activeDocuments[docid].Docname.save();    
-          console.log("saved")  
-        }
-        */
       } else {
         /*while (activeDocuments[docid][uid].doc.version !== activeDocuments[docid].version) {
           console.log(`stalling version:${version} docversion:${activeDocuments[docid][uid].doc.version} serverVersion:${activeDocuments[docid].version} op:${JSON.stringify(op)}`)
