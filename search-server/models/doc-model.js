@@ -5,6 +5,7 @@ const DocSchema = new Schema(
     {
         _id: String,
         _o: { type: Schema.Types.ObjectId },
+        ops: [Object],
         _m: {
             ctime: Number,
             mtime: Number
