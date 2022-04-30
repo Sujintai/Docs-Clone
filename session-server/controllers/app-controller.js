@@ -12,7 +12,7 @@ var sharedb = require('sharedb/lib/client');
 const richText = require('rich-text')
 sharedb.types.register(richText.type)
 QuillDeltaToHtmlConverter = require('quill-delta-to-html').QuillDeltaToHtmlConverter;
-
+/*
 // CONNECT REDIS
 const redis = require('redis');
 const redisClient = redis.createClient();
@@ -21,7 +21,7 @@ redisClient.on('connect', function() {
   console.log('Connected to Redis!');
 });
 redisClient.connect();
-
+*/
 opcount = 0;
 hash = 0;
 clients = [];
