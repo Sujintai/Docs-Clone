@@ -104,12 +104,13 @@ connect = async (req,res) => {
       //console.log(doc.data.ops);
       //console.log(doc);
       if (!activeDocuments[docid]) { // if doc was inactive
-        let docname = await Docname.findOne({ id:doc.id});
-        console.log(`docname: ${docname}`)
+        
         console.log("Setup client tracking")
         activeDocuments[docid] = []; // setup client tracking
         activeDocuments[docid].version = doc.version; // setup version tracking
         activeDocuments[docid].doc = doc; // setup version tracking
+        let docname = await Docname.findOne({ id:doc.id});
+        console.log(`docname: ${docname}`)
         activeDocuments[docid].Docname = docname; // Setup search index tracking
         //opcount = doc.version;
       }
@@ -186,7 +187,7 @@ connect = async (req,res) => {
 
 // { version, op }  { status }
 // Submit a new Delta op for document with given version.
-op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1.6pts without async // async might be too fast and cause issues with version
+op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1.6pts without async // async might be too fast and cause issues with version
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
     try {
       const { docid, uid } = req.params;
@@ -201,11 +202,11 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
       redisDoc.submitOp(req.body.op)
       */
 
-      /*if (!activeDocuments[docid] || !activeDocuments[docid][uid] || !req.body) { // Check if valid id
+      if (!activeDocuments[docid] || !activeDocuments[docid][uid] || !req.body) { // Check if valid id
         console.log(`activeDocuments[docid]:${activeDocuments[docid]}`);
-        //console.log(`activeDocuments[docid][uid]:${activeDocuments[docid][uid]}`);
+        console.log(`activeDocuments[docid][uid]:${activeDocuments[docid][uid]}`);
         
-      }*/
+      }
       //activeDocuments[docid][uid].doc.submitOp([{retain: 5}, {insert: ' ipsum'}]);
       /*ops = [
         [{'retain': 5}, {'insert': 'a'}],
@@ -219,12 +220,33 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
       console.log(`versions: doc.version:${docVersion} server.version:${serverVersion}`)
       if ((serverVersion == docVersion) && (version == docVersion)) { // make sure doc and server are same version, AND user version matches doc version
         activeDocuments[docid].version = activeDocuments[docid].version + 1; // increment server version
-        await activeDocuments[docid][uid].doc.submitOp(op); // submitop to specific user's doc
+        activeDocuments[docid][uid].doc.submitOp(op, async function(err) {
+          // Update search index
+          let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
+          let html = converter.convert(); // Convert ops to html 
+          activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
+          try {
+            activeDocuments[docid].Docname.save(function(err) {
+              if (err) {
+                  console.log(err);
+              }
+              console.log("Saved docname") 
+            });    
+          } catch(err) {
+            console.log("Error saving docname")
+          } 
+          
+        }); // submitop to specific user's doc
+        /*
         // Update search index
-        let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
-        let html = converter.convert(); // Convert ops to html 
-        activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
-        activeDocuments[docid].Docname.save();      
+        async () => {
+          let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
+          let html = converter.convert(); // Convert ops to html 
+          activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
+          activeDocuments[docid].Docname.save();    
+          console.log("saved")  
+        }
+        */
       } else {
         /*while (activeDocuments[docid][uid].doc.version !== activeDocuments[docid].version) {
           console.log(`stalling version:${version} docversion:${activeDocuments[docid][uid].doc.version} serverVersion:${activeDocuments[docid].version} op:${JSON.stringify(op)}`)
