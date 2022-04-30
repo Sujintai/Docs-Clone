@@ -38,7 +38,7 @@ connect = async (req,res) => {
     // SETUP OT Connection for user
     // Open WebSocket connection to ShareDB server
     //var socket = new ReconnectingWebSocket('ws://' + window.location.host);
-    let socket = new WebSocket('ws://localhost:8080');
+    let socket = new WebSocket('ws://209.151.151.54:8080');
     let connection = new sharedb.Connection(socket);
     let doc = connection.get('docs', docid);
     let presence = connection.getDocPresence('docs', docid);
