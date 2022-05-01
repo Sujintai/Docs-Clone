@@ -5,6 +5,7 @@ const path = require('path');
 
 router.get('/index/search/', AppController.search)
 router.get('/index/suggest/', AppController.suggest)
+router.post('/index/index', AppController.index)
 
 
 

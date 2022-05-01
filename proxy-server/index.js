@@ -55,8 +55,8 @@ app.use(cors({
 
 
 // INITIALIZE OUR DATABASE OBJECT
-const db = require('./db')
-db.on('error', console.error.bind(console, 'MongoDB connection error:'))
+//const db = require('./db')
+//db.on('error', console.error.bind(console, 'MongoDB connection error:'))
 
 // PUT THE SERVER IN LISTENING MODE
 
