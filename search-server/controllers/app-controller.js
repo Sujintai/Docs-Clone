@@ -26,11 +26,12 @@ search = async (req,res) => {
     console.log("cache")
     return res.status(200).json(cacheResult);
   }
-  
+  /*
   var stream = Docname.synchronize();
   stream.on('error', function (err) {
     console.log("Error while synchronizing" + err);
   });
+  */
   if (req.query && req.query.q) {
     // Valid query
     
@@ -101,7 +102,7 @@ search = async (req,res) => {
     }
   }
   res.status(200).json(returnArr);
-  cache.put(req.query.q, returnArr, 5000); // Cache result for 5 seconds
+  cache.put(req.query.q, returnArr, 10000); // Cache result for 10 seconds
 
   console.timeEnd('Search Execution Time');
 }
@@ -116,10 +117,12 @@ suggest = async (req,res) => {
     console.log("cache")
     return res.status(200).json(cacheResult);
   }
+  /*
   var stream = Docname.synchronize();
   stream.on('error', function (err) {
     console.log("Error while synchronizing" + err);
   });
+  */
   if (req.query && req.query.q) {
     // Valid query
     
@@ -153,7 +156,7 @@ suggest = async (req,res) => {
     }
   }
   res.status(200).json(returnArr);
-  cache.put(req.query.q, returnArr, 5000); // Cache result for 5 seconds
+  cache.put(req.query.q, returnArr, 10000); // Cache result for 10 seconds
 
   console.timeEnd('Suggest Execution Time');
 }
