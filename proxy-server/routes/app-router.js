@@ -21,16 +21,16 @@ const customRouter = function (req) {
     let clusterNumber = Math.floor(hash/serversPerCluster)
     let portDigit = hash % serversPerCluster; // NEW PORT: 0-15 % 8 = 0-7
     let port = 4000 + portDigit // new port
-    let address = 'http://194.113.74.143:' + port.toString();
+    let address = process.env.SERVER_1 + port.toString();
     switch (clusterNumber) {
       case 0:
         //port = 4000 + portDigit // new port
-        address = 'http://194.113.74.143:' + port.toString();
+        address = process.env.SERVER_1 + port.toString();
         console.log(`routed: docid:${req.params.docid} uid:${req.params.uid} to hash:${hash} address: ${address}`)
         return address; // protocol + host
       case 1:
         //port = 4000 + portDigit // new port
-        address = 'http://209.94.59.121:' + port.toString();
+        address = process.env.SERVER_2 + port.toString();
         console.log(`routed: docid:${req.params.docid} uid:${req.params.uid} to hash:${hash} address: ${address}`)
         return address; // protocol + host
       default:
@@ -40,7 +40,7 @@ const customRouter = function (req) {
 };
 
 const options = {
-  target: 'http://209.94.58.107:4000',
+  target:  process.env.SERVER_1 + '4000',
   changeOrigin: true,
   router: customRouter,
   onProxyReq: (proxyRes, req, res) => {
