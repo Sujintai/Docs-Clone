@@ -3,6 +3,7 @@ const Doc = require('../models/doc-model');
 const Docname = require('../models/docname-model');
 const sharedb = require('sharedb/lib/client');
 const richText = require('rich-text');
+const WebSocket = require('ws');
 sharedb.types.register(richText.type);
 
 //  { name } { docid } Create a new document.
@@ -28,6 +29,11 @@ createDoc = async (req,res) => {
     // Create doc in sharedb using mongo docid
     let docid = mongoose.Types.ObjectId().toString(); // Generate docid as STRING
     console.log("Doc id %s", docid)
+    let hash = Number("0x" + docid.slice(-2)) % process.env.NUMBER_OF_SERVERS_SHAREDB; // Number between 0 to Number_of_servers-1 inclusive
+    let shareDBport = parseInt(process.env.SHAREDB_PORT) + hash;
+    let shareDBLocation = process.env.SHAREDB_SERVER + shareDBport;
+    console.log(shareDBLocation);
+    let socket = new WebSocket(shareDBLocation);
     let connection = new sharedb.Connection(socket);
     let doc = connection.get('docs', docid);
     doc.fetch(initializeDoc);
@@ -100,6 +106,11 @@ deleteDoc = async (req,res) => {
         // Doc exists in mongo
 
         // Delete doc from sharedb
+        let hash = Number("0x" + docid.slice(-2)) % process.env.NUMBER_OF_SERVERS_SHAREDB; // Number between 0 to Number_of_servers-1 inclusive
+        let shareDBport = parseInt(process.env.SHAREDB_PORT) + hash;
+        let shareDBLocation = process.env.SHAREDB_SERVER + shareDBport;
+        console.log(shareDBLocation);
+        let socket = new WebSocket(shareDBLocation);
         let connection = new sharedb.Connection(socket);
         console.log(docToDelete._id)
         let doc = connection.get('docs', docid);

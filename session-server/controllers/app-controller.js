@@ -39,7 +39,11 @@ connect = async (req,res) => {
     // SETUP OT Connection for user
     // Open WebSocket connection to ShareDB server
     //var socket = new ReconnectingWebSocket('ws://' + window.location.host);
-    let socket = new WebSocket(process.env.SHAREDB_SERVER);
+    let hash = Number("0x" + docid.slice(-2)) % process.env.NUMBER_OF_SERVERS_SHAREDB; // Number between 0 to Number_of_servers-1 inclusive
+    let shareDBport = parseInt(process.env.SHAREDB_PORT) + hash;
+    let shareDBLocation = process.env.SHAREDB_SERVER + shareDBport;
+    console.log(shareDBLocation);
+    let socket = new WebSocket(shareDBLocation);
     let connection = new sharedb.Connection(socket);
     let doc = connection.get('docs', docid);
     let presence = connection.getDocPresence('docs', docid);

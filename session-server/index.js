@@ -54,7 +54,6 @@ app.use(cookieParser())
 // SETUP OT SOCKETS
 // Open WebSocket connection to ShareDB server
 //var socket = new ReconnectingWebSocket('ws://' + window.location.host);
-socket = new WebSocket(process.env.SHAREDB_SERVER);
 //connection = new sharedb.Connection(socket);
 
 // SETUP SESSION MANAGER
@@ -62,7 +61,6 @@ sessionManager = [];
 let hash = 0; // TODO: Change 0 into hash function for docid
 sessionManager[hash] = { 
   URL: process.env.SHAREDB_SERVER,
-  socket,
   activeDocuments: []
 }
 
