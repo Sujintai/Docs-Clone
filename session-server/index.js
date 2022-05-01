@@ -17,7 +17,7 @@ var numCPUs = require('os').cpus().length;
 if (cluster.isMaster) {
   var pidToPort = {}; 
   var worker, port;
-  for (var i = 1; i < (numCPUs); i++) { // Start at 1 because master process is 4000
+  for (var i = 1; i < numCPUs; i++) { // Start at 1 because master process is 4000
     port = 4000 + i;
     worker = cluster.fork({port: port});
     pidToPort[worker.process.pid] = port;
