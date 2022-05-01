@@ -10,7 +10,12 @@ Backend.types.register(richText.type)
 const db = require('sharedb-mongo')('mongodb://localhost:27017/docsclone');
 //const db = require('sharedb-mongo')('mongodb+srv://tatakae:tatakae@cluster0.sra41.mongodb.net/docsclone?retryWrites=true&w=majority');
 
-var backend = new Backend({db, presence: true});
+var redis = require('redis');
+const redisClient = redis.createClient();
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
+redisClient.connect();
+var redisPubsub = require('sharedb-redis-pubsub')({client: redisClient});
+var backend = new Backend({db, presence: true, pubsub: redisPubsub});
 var connection = backend.connect();
 
 // Create a web server to serve files and listen to WebSocket connections
