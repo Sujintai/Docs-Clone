@@ -18,5 +18,15 @@ DocnameSchema.plugin(mongoosastic/*, {
       ]
     }
 }*/);
-
+let Docname = mongoose.model('Docname', DocnameSchema);
+Docname.createMapping(function(err, mapping){  
+    if(err){
+      console.log('error creating mapping (you can safely ignore this)');
+      console.log(err);
+    }else{
+      console.log('mapping created!');
+      console.log(mapping);
+    }
+  });
+Docname.synchronize();
 module.exports = mongoose.model('Docname', DocnameSchema)

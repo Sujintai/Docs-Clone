@@ -40,7 +40,10 @@ const customRouter = function (req) {
 const options = {
   target: 'http://209.94.58.107:4000',
   changeOrigin: true,
-  router: customRouter
+  router: customRouter,
+  onProxyReq: (proxyRes, req, res) => {
+    res.on('close', () => proxyRes.destroy());
+  }
 };
 const myProxy = createProxyMiddleware(options);
 //const opProxy = createProxyMiddleware(options);
