@@ -77,7 +77,8 @@ connect = async (req,res) => {
     function initializePresence() {
       // Doc is subscribed, initial value should be present
       console.log(`Doc subscribed, initializing presence...`);
-      presence.subscribe(initializeConnection);
+      initializeConnection();
+      //presence.subscribe(initializeConnection);
 
       // When presence changes
       presence.on('receive', function(id, value) { 
