@@ -101,7 +101,7 @@ search = async (req,res) => {
     }
   }
   res.status(200).json(returnArr);
-  cache.put(req.query.q, returnArr, 30000); // Cache result for 30 seconds
+  cache.put(req.query.q, returnArr, 10000); // Cache result for 10 seconds
 
   console.timeEnd('Search Execution Time');
 }
@@ -153,7 +153,7 @@ suggest = async (req,res) => {
     }
   }
   res.status(200).json(returnArr);
-  cache.put(req.query.q, returnArr, 30000); // Cache result for 30 seconds
+  cache.put(req.query.q, returnArr, 10000); // Cache result for 10 seconds
 
   console.timeEnd('Suggest Execution Time');
 }
@@ -174,7 +174,7 @@ index = async (req,res) => {
     await redisClient.set(req.body.docid, "T");
     // Set timer
     setTimeout(async () => {
-      console.log("Delayed for 5 seconds.");
+      console.log("Delayed for 10 seconds.");
       // Stopped tracking docid, let other process handle new reqs
       await redisClient.set(req.body.docid, "F");
       // Index
@@ -206,7 +206,7 @@ index = async (req,res) => {
       } catch(err) {
         console.log("Error saving docname")
       }
-    }, 5000)
+    }, 10000)
   }
   
   /*
