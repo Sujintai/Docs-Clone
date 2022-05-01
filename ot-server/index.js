@@ -7,7 +7,9 @@ var WebSocketJSONStream = require('@teamwork/websocket-json-stream');
 const richText = require('rich-text')
 
 Backend.types.register(richText.type)
-const db = require('sharedb-mongo')('mongodb://209.151.151.54:27017/docsclone');
+require('dotenv').config()
+//console.log(process.env.DB_CONNECT)
+const db = require('sharedb-mongo')(process.env.DB_CONNECT);
 //const db = require('sharedb-mongo')('mongodb+srv://tatakae:tatakae@cluster0.sra41.mongodb.net/docsclone?retryWrites=true&w=majority');
 /*
 var redis = require('redis');
