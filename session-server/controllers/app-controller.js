@@ -234,15 +234,32 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
       if ((serverVersion == docVersion) && (version == docVersion)) { // make sure doc and server are same version, AND user version matches doc version
         activeDocuments[docid].version = activeDocuments[docid].version + 1; // increment server version
         activeDocuments[docid][uid].doc.submitOp(op, async function(err) {
-          // Update search index
-          axios({
-            method: 'post',
-            url: process.env.SEARCH_SERVER + '/index/index',
-            headers: {'Content-Type': 'application/json'},
-            data: { docid }
-          }).catch(function (error) {
-            console.log(error);
-          });
+          // Check for id to see if id is being watched
+          let cached = activeDocuments[docid].watched;
+          console.log(`cached: ${cached}`)
+          if (cached == "T") { // T if being watched, F if not being watched
+            // Doc already being watched
+            console.log("already being watched")
+          } else {
+            console.log("set up watching")
+            // Let other processes know that this docid is being tracked
+            activeDocuments[docid].watched = "T";
+            // Set timer
+            setTimeout(async () => {
+              console.log("Delayed for 10 seconds.");
+              // Stopped tracking docid, let other process handle new reqs
+              activeDocuments[docid].watched = "F";
+              // Index
+              // Update search index
+              axios({
+                method: 'post',
+                url: process.env.SEARCH_SERVER + '/index/index',
+                headers: {'Content-Type': 'application/json'},
+                data: { docid }
+              }).catch(function (error) {
+                console.log(error);
+              });
+            }, 10000);
           
           /*let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
           let html = converter.convert(); // Convert ops to html 
