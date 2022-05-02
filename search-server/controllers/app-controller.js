@@ -19,13 +19,14 @@ search = async (req,res) => {
   //console.log(req.query.q);
   //await new Docname({name:"testname", id:123, content:"test"}).save();
   
-  
+  /*
   let cacheResult = await cache.get(req.query.q);
   console.log(cacheResult)
   if (cacheResult) {
     console.log("cache")
     return res.status(200).json(cacheResult);
   }
+  */
   /*
   var stream = Docname.synchronize();
   stream.on('error', function (err) {
@@ -101,8 +102,11 @@ search = async (req,res) => {
       returnArr.push({docid, name, snippet})
     }
   }
+  if (returnArr.length == 0) {
+    return res.status(200).json([{docid,name,snippet}]);
+  }
   res.status(200).json(returnArr);
-  cache.put(req.query.q, returnArr, 10000); // Cache result for 10 seconds
+  //await cache.put(req.query.q, returnArr, 5000); // Cache result for 5 seconds
 
   console.timeEnd('Search Execution Time');
 }
@@ -112,11 +116,13 @@ suggest = async (req,res) => {
   console.log(`Suggest: ${JSON.stringify(req.query.q)}`);
   //console.log(req.query.q);
   //await new Docname({name:"testname", id:123, content:"test"}).save();
+  /*
   let cacheResult = cache.get(req.query.q);
   if (cacheResult) {
     console.log("cache")
     return res.status(200).json(cacheResult);
   }
+  */
   /*
   var stream = Docname.synchronize();
   stream.on('error', function (err) {
@@ -155,8 +161,11 @@ suggest = async (req,res) => {
       returnArr.push(string)
     }
   }
+  if (returnArr.length == 0) {
+    return res.status(200).json(["dog"]);
+  }
   res.status(200).json(returnArr);
-  cache.put(req.query.q, returnArr, 10000); // Cache result for 10 seconds
+  // await cache.put(req.query.q, returnArr, 5000); // Cache result for 5 seconds
 
   console.timeEnd('Suggest Execution Time');
 }
@@ -164,7 +173,7 @@ suggest = async (req,res) => {
 index = async (req,res) => {
   res.send(); // Instantly respond to req
   console.log(`Index: ${req.body.docid}`);
-
+  /*
   // Check redis cache for id to see if another process is watching id
   let cached = await redisClient.get(req.body.docid)
   console.log(`cached: ${cached}`)
@@ -180,6 +189,7 @@ index = async (req,res) => {
       console.log("Delayed for 5 seconds.");
       // Stopped tracking docid, let other process handle new reqs
       await redisClient.set(req.body.docid, "F");
+  */
       // Index
       // Fetch Doc
       let currentDoc = await Doc.findOne({_id:req.body.docid});
@@ -209,8 +219,8 @@ index = async (req,res) => {
       } catch(err) {
         console.log("Error saving docname")
       }
-    }, 5000)
-  }
+   //}, 5000)
+  //}
   
   /*
   // Get ISO String, bc mongo stores ISO string
