@@ -224,6 +224,9 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
         [{'insert': 'Hello', 'attributes': {'bold': true}}]
       ];*/
       const { version, op } = req.body;
+      if (!version || !op) {
+        return res.status(200).json({ error:true, message:"bad input. no version or op"})
+      }
       docVersion = activeDocuments[docid][uid].doc.version;
       serverVersion = activeDocuments[docid].version;
       // Check if version is synced
