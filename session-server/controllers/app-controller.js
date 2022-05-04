@@ -266,8 +266,7 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
                 url: process.env.SEARCH_SERVER + '/index/index',
                 headers: {'Content-Type': 'application/json'},
                 data: { 
-                  docid,
-                  ops: activeDocuments[docid].mostRecentOps
+                  docid
                 }
               }).catch(function (error) {
                 console.log(error);
