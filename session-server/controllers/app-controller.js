@@ -254,7 +254,7 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
             // Let other processes know that this docid is being tracked
             activeDocuments[docid].watched = "T";
             // Set timer
-            setTimeout(() => {
+            setTimeout(async () => {
               console.log("Delayed for 10 seconds.");
               // Stopped tracking docid, let other process handle new reqs
               activeDocuments[docid].watched = "F";
