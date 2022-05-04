@@ -244,8 +244,8 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
           // Check for id to see if id is being watched
           let cached = activeDocuments[docid].watched;
           console.log(`cached: ${cached}`)
-          activeDocuments[docid].mostRecentOps = activeDocuments[docid][uid].doc.data.ops;
-          console.log(`Most recent ops stored: ${activeDocuments[docid].mostRecentOps}`);
+          //activeDocuments[docid].mostRecentOps = activeDocuments[docid][uid].doc.data.ops;
+          //console.log(`Most recent ops stored: ${activeDocuments[docid].mostRecentOps}`);
           if (cached == "T") { // T if being watched, F if not being watched
             // Doc already being watched
             console.log("already being watched")
