@@ -192,9 +192,10 @@ index = async (req,res) => {
   */
       // Index
       // Fetch Doc
-      let currentDoc = await Doc.findOne({_id:req.body.docid});
-      console.log(`currentDoc: ${currentDoc}`);
-      let ops = currentDoc.ops;
+      //let currentDoc = await Doc.findOne({_id:req.body.docid});
+      //console.log(`currentDoc: ${currentDoc}`);
+      //let ops = currentDoc.ops;
+      let ops = req.body.ops;
       console.log(`ops: ${ops[0]}`)
       // Convert Doc.ops to html
       let converter = new QuillDeltaToHtmlConverter(ops, {});

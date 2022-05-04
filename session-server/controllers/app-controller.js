@@ -251,11 +251,15 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
               activeDocuments[docid].watched = "F";
               // Index
               // Update search index
+
               axios({
                 method: 'post',
                 url: process.env.SEARCH_SERVER + '/index/index',
                 headers: {'Content-Type': 'application/json'},
-                data: { docid }
+                data: { 
+                  docid,
+                  ops: activeDocuments[docid][uid].doc.data.ops 
+                }
               }).catch(function (error) {
                 console.log(error);
               });
