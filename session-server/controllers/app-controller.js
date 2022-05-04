@@ -198,7 +198,7 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
     try {
       const { docid, uid } = req.params;
-      console.log(`Function: Op received: by ${uid}` )
+      console.log(`Function: Op received: by ${uid} docid: ${docid}` )
       // REDIS
       /*
       let rediskey = docid + "," + uid;
