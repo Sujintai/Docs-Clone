@@ -273,8 +273,8 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
               }).catch(function (error) {
                 console.log(error);
               });
-          //  }, 5000);
-          }
+            //}, 5000);
+          //}
           /*let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
           let html = converter.convert(); // Convert ops to html 
           activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
