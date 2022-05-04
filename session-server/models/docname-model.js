@@ -13,11 +13,11 @@ const DocnameSchema = new Schema(
 );
 
 const client = new Client({
-  node: 'https://cse356.es.us-east-1.aws.found.io:9243',
+  node: 'https://cse356-2c0f5e.es.us-east4.gcp.elastic-cloud.com:9243',
   //cloud: { id: 'CSE356:dXMtZWFzdC0xLmF3cy5mb3VuZC5pbyQ3MTY0MjdlMTI2NTM0ZmIyYmZmYzZiMjQ5OGVhODNiNyQxZjIyNWQ4NDZiZTI0NDdjYjkyOTMxNjAzMDI0N2I1OQ==' },
   auth: { 
     username: 'elastic',
-    password: '2nDWJL1Z2d0caOxuuYpd0qgC'
+    password: 'InBZTOnmg20F3OHgvOv0VjIB'
   }
 })
 
