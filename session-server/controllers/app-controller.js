@@ -241,6 +241,7 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
         });
         activeDocuments[docid].version = activeDocuments[docid].version + 1; // increment server version
         activeDocuments[docid][uid].doc.submitOp(op, async function(err) {
+          /*
           // Check for id to see if id is being watched
           let cached = activeDocuments[docid].watched;
           console.log(`cached: ${cached}`)
@@ -258,6 +259,7 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
               console.log("Delayed for 10 seconds.");
               // Stopped tracking docid, let other process handle new reqs
               activeDocuments[docid].watched = "F";
+              */
               // Index
               // Update search index
 
@@ -271,7 +273,7 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
               }).catch(function (error) {
                 console.log(error);
               });
-            }, 5000);
+          //  }, 5000);
           }
           /*let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
           let html = converter.convert(); // Convert ops to html 
