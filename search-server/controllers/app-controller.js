@@ -13,12 +13,31 @@ redisClient.on('connect', function() {
 });
 redisClient.connect();
 
+const { Client } = require('@elastic/elasticsearch')
+const client = new Client({
+  cloud: { id: 'cse356:dXMtZWFzdDQuZ2NwLmVsYXN0aWMtY2xvdWQuY29tJDY0MjljYTY2Nzk1MTQzZjdiMTkyZDllNWZhZWRmNjI3JDdmYmI2ZDQ1OGFjNjQ5Y2JiMDE1MTQ4OWRmZDViYWJl' },
+  auth: { 
+    username: 'elastic',
+    password: 'InBZTOnmg20F3OHgvOv0VjIB' }
+  })
+const stopwords = ['i','me','my','myself','we','our','ours','ourselves','you','your','yours','yourself','yourselves','he','him','his','himself','she','her','hers','herself','it','its','itself','they','them','their','theirs','themselves','what','which','who','whom','this','that','these','those','am','is','are','was','were','be','been','being','have','has','had','having','do','does','did','doing','a','an','the','and','but','if','or','because','as','until','while','of','at','by','for','with','about','against','between','into','through','during','before','after','above','below','to','from','up','down','in','out','on','off','over','under','again','further','then','once','here','there','when','where','why','how','all','any','both','each','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','s','t','can','will','just','don','should','now'];
+function remove_stopwords(str) {
+  res = []
+  words = str.split(' ')
+  for(i=0;i<words.length;i++) {
+     word_clean = words[i].split(".").join("")
+     if(!stopwords.includes(word_clean)) {
+         res.push(word_clean)
+     }
+  }
+  return(res.join(' '))
+}  
 search = async (req,res) => {
   console.time('Search Execution Time');
   console.log(`Search: ${JSON.stringify(req.query.q)}`);
   //console.log(req.query.q);
   //await new Docname({name:"testname", id:123, content:"test"}).save();
-  
+  let query = remove_stopwords(req.query.q);
   /*
   let cacheResult = await cache.get(req.query.q);
   console.log(cacheResult)
@@ -39,22 +58,24 @@ search = async (req,res) => {
   }
   //let querywords = req.query.q.split(" ");
   //for (var i = 0; i < querywords.length; i++) {
-    let result = await Docname.esSearch(
+    let result = await client.search(
     {
+      index: "docnames",
       query: {
         match_phrase: {
-          content: req.query.q
+          content: query
         }
       }
     });
   
-  //console.log(result.body.hits);
+  console.log(result);
   
   let docid = 123;
   let name = "test"
   let snippet = "<em>test</em>"
   let returnArr = [];
-  let hits = result.body.hits.hits;
+  //let hits = result.body.hits.hits;
+  let hits = result.hits.hits;
   //console.log(hits)
   if (hits.length > 0) {
     for (var i = 0; i < hits.length; i++) {
@@ -67,7 +88,7 @@ search = async (req,res) => {
       content = hits[i]._source.content;
 
       // Get snippet
-      let words = req.query.q.split(" ");
+      let words = query.split(" ");
       console.log(words);
       let minIdx = content.length - 1;
       let maxIdx = 0;
@@ -114,6 +135,7 @@ search = async (req,res) => {
 suggest = async (req,res) => {
   console.time('Suggest Execution Time');
   console.log(`Suggest: ${JSON.stringify(req.query.q)}`);
+  let query = remove_stopwords(req.query.q);
   //console.log(req.query.q);
   //await new Docname({name:"testname", id:123, content:"test"}).save();
   /*
@@ -133,11 +155,12 @@ suggest = async (req,res) => {
     // Valid query
     
   }
-  let result = await Docname.esSearch({
+  let result = await client.search({
+    index: "docnames",
     query: {
       match_phrase_prefix: {
         content: {
-          query: req.query.q
+          query: query
         }
       }
     }
@@ -147,16 +170,20 @@ suggest = async (req,res) => {
   
   let string = "<em>test</em>"
   let returnArr = [];
-  let hits = result.body.hits.hits;
-  //console.log(hits)
+  //let hits = result.body.hits.hits;
+  let hits = result.hits.hits;
+  console.log(hits)
   if (hits.length > 0) {
     for (var i = 0; i < hits.length; i++) {
       if (i == 10) {
         break;
       }
       //console.log(`hits[i]: ${JSON.stringify(hits[i])}`)
-      let idxstart = hits[i]._source.content.indexOf(req.query.q);
+      let idxstart = hits[i]._source.content.indexOf(query);
       let idxend = hits[i]._source.content.indexOf(" ", idxstart);
+      if (idxend == -1) {
+        idxend = hits[i]._source.content.length - 1;
+      }
       string = hits[i]._source.content.substring(idxstart,idxend);
       returnArr.push(string)
     }
@@ -196,7 +223,7 @@ index = async (req,res) => {
       //console.log(`currentDoc: ${currentDoc}`);
       //let ops = currentDoc.ops;
       let ops = req.body.ops;
-      console.log(`ops: ${ops[0]}`)
+      console.log(`ops: ${JSON.stringify(ops)}`)
       // Convert Doc.ops to html
       let converter = new QuillDeltaToHtmlConverter(ops, {});
       let html = converter.convert(); // Convert ops to html 
@@ -211,14 +238,25 @@ index = async (req,res) => {
       currentDocname.content = plaintext;
       
       try {
-        currentDocname.save(function(err) {
+        await client.index({
+          index: 'docnames',
+          document: {
+            name: currentDocname.name,
+            id: currentDocname.id,
+            content: plaintext
+          }
+        })
+        console.log(plaintext);
+        /*currentDocname.save(function(err) {
           if (err) {
           console.log(err);
           }
           console.log("Saved docname") 
-        });
+        });*/
+        console.log("Saved docname") 
       } catch(err) {
         console.log("Error saving docname")
+        console.log(err)
       }
    //}, 5000)
   //}
