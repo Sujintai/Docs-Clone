@@ -263,7 +263,7 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
               // Index
               // Update search index
 
-              axios({
+              /*axios({
                 method: 'post',
                 url: process.env.SEARCH_SERVER + '/index/index',
                 headers: {'Content-Type': 'application/json'},
@@ -272,10 +272,10 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
                 }
               }).catch(function (error) {
                 console.log(error);
-              });
+              });*/
             //}, 5000);
           //}
-          /*let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
+          let converter = new QuillDeltaToHtmlConverter(activeDocuments[docid][uid].doc.data.ops, {});
           let html = converter.convert(); // Convert ops to html 
           activeDocuments[docid].Docname.content = convert(html, {wordwrap: false });
           try {
@@ -288,7 +288,7 @@ op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, /
           } catch(err) {
             console.log("Error saving docname")
           } 
-          */
+          
         }); // submitop to specific user's doc
       } else {
         /*while (activeDocuments[docid][uid].doc.version !== activeDocuments[docid].version) {
