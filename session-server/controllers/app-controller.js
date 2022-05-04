@@ -194,7 +194,7 @@ connect = async (req,res) => {
 
 // { version, op }  { status }
 // Submit a new Delta op for document with given version.
-op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1.6pts without async // async might be too fast and cause issues with version
+op = async (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1.6pts without async // async might be too fast and cause issues with version
     res.append('X-CSE356', '61fa16dc73ba724f297dba00') // For class
     try {
       const { docid, uid } = req.params;
