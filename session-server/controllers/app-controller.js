@@ -232,6 +232,13 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
       // Check if version is synced
       console.log(`versions: doc.version:${docVersion} server.version:${serverVersion}`)
       if ((serverVersion == docVersion) && (version == docVersion)) { // make sure doc and server are same version, AND user version matches doc version
+        console.log(op);
+        console.log(`Op submitted: NEW version:${activeDocuments[docid].version}`)
+        //doc.submitOp(); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
+        //doc.submitOp([{retain: 5}, {insert: ' ipsum'}]); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
+        res.status(200).json({
+          status: "ok"
+        });
         activeDocuments[docid].version = activeDocuments[docid].version + 1; // increment server version
         activeDocuments[docid][uid].doc.submitOp(op, async function(err) {
           // Check for id to see if id is being watched
@@ -294,17 +301,12 @@ op = (req,res) => { // NOT ASYNC, if problems occur make it async again, //max 1
       }
 
       // Version in sync, submit op and update version
-      console.log(op);
+      
       //console.log(`Submitting Op version:${activeDocuments[docid].version}` )
       //activeDocuments[docid].version += 1;
       //activeDocuments[docid][uid].doc.submitOp(op);
 
-      console.log(`Op submitted: NEW version:${activeDocuments[docid].version}`)
-      //doc.submitOp(); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
-      //doc.submitOp([{retain: 5}, {insert: ' ipsum'}]); //.res.write(`content: ${JSON.stringify({num: 1})}\n\n`); // res.write() instead of res.send()
-      return res.status(200).json({
-        status: "ok"
-      });
+      
     } catch (err) {
       console.log(err)
       return res.status(200).json({
