@@ -14,11 +14,15 @@ redisClient.on('connect', function() {
 redisClient.connect();
 
 const { Client } = require('@elastic/elasticsearch')
-const client = new Client({
+/*const client = new Client({
   cloud: { id: 'cse356:dXMtZWFzdDQuZ2NwLmVsYXN0aWMtY2xvdWQuY29tJDY0MjljYTY2Nzk1MTQzZjdiMTkyZDllNWZhZWRmNjI3JDdmYmI2ZDQ1OGFjNjQ5Y2JiMDE1MTQ4OWRmZDViYWJl' },
   auth: { 
     username: 'elastic',
     password: 'InBZTOnmg20F3OHgvOv0VjIB' }
+  })
+  */
+  const client = new Client({
+    node: 'http://localhost:9200'
   })
 const stopwords = ['i','me','my','myself','we','our','ours','ourselves','you','your','yours','yourself','yourselves','he','him','his','himself','she','her','hers','herself','it','its','itself','they','them','their','theirs','themselves','what','which','who','whom','this','that','these','those','am','is','are','was','were','be','been','being','have','has','had','having','do','does','did','doing','a','an','the','and','but','if','or','because','as','until','while','of','at','by','for','with','about','against','between','into','through','during','before','after','above','below','to','from','up','down','in','out','on','off','over','under','again','further','then','once','here','there','when','where','why','how','all','any','both','each','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','s','t','can','will','just','don','should','now'];
 function remove_stopwords(str) {
@@ -37,7 +41,10 @@ search = async (req,res) => {
   console.log(`Search: ${JSON.stringify(req.query.q)}`);
   //console.log(req.query.q);
   //await new Docname({name:"testname", id:123, content:"test"}).save();
+  
+  // Remove stop words
   let query = remove_stopwords(req.query.q);
+  //let query = req.query.q;
   /*
   let cacheResult = await cache.get(req.query.q);
   console.log(cacheResult)
@@ -135,7 +142,10 @@ search = async (req,res) => {
 suggest = async (req,res) => {
   console.time('Suggest Execution Time');
   console.log(`Suggest: ${JSON.stringify(req.query.q)}`);
-  let query = remove_stopwords(req.query.q);
+  
+  // Remove stopwords
+  //let query = remove_stopwords(req.query.q);
+  let query = req.query.q;
   //console.log(req.query.q);
   //await new Docname({name:"testname", id:123, content:"test"}).save();
   /*
@@ -200,7 +210,7 @@ suggest = async (req,res) => {
 index = async (req,res) => {
   res.send(); // Instantly respond to req
   console.log(`Index: ${req.body.docid}`);
-  /*
+  
   // Check redis cache for id to see if another process is watching id
   let cached = await redisClient.get(req.body.docid)
   console.log(`cached: ${cached}`)
@@ -216,7 +226,7 @@ index = async (req,res) => {
       console.log("Delayed for 5 seconds.");
       // Stopped tracking docid, let other process handle new reqs
       await redisClient.set(req.body.docid, "F");
-  */
+  
       // Index
       // Fetch Doc
       let currentDoc = await Doc.findOne({_id:req.body.docid});
@@ -258,8 +268,8 @@ index = async (req,res) => {
         console.log("Error saving docname")
         console.log(err)
       }
-   //}, 5000)
-  //}
+   }, 5000)
+  }
   
   /*
   // Get ISO String, bc mongo stores ISO string

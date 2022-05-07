@@ -48,6 +48,33 @@ const options = {
   }
 };
 const myProxy = createProxyMiddleware(options);
+const searchProxy = createProxyMiddleware({
+  target: "http://localhost:80", 
+  onProxyReq: (proxyReq, req, res) => {
+    console.log("hey")
+    
+    //console.log(proxyReq);
+    //proxyReq.path = '/index/search?&q=valudog';
+    const stopwords = ['i','me','my','myself','we','our','ours','ourselves','you','your','yours','yourself','yourselves','he','him','his','himself','she','her','hers','herself','it','its','itself','they','them','their','theirs','themselves','what','which','who','whom','this','that','these','those','am','is','are','was','were','be','been','being','have','has','had','having','do','does','did','doing','a','an','the','and','but','if','or','because','as','until','while','of','at','by','for','with','about','against','between','into','through','during','before','after','above','below','to','from','up','down','in','out','on','off','over','under','again','further','then','once','here','there','when','where','why','how','all','any','both','each','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','s','t','can','will','just','don','should','now'];
+    function remove_stopwords(str) {
+      res = []
+      words = str.split(' ')
+      for(i=0;i<words.length;i++) {
+        word_clean = words[i].split(".").join("")
+        if(!stopwords.includes(word_clean)) {
+            res.push(word_clean)
+        }
+      }
+      return(res.join(' '))
+    }
+    let query = remove_stopwords(req.query.q);
+    
+    proxyReq.path = '/index/search?q=' + encodeURI(query);
+  }
+});
+const suggestProxy = createProxyMiddleware({
+  target: "http://localhost:80"
+});
 //const opProxy = createProxyMiddleware(options);
 
 router.post('/users/login', UserController.loginUser)
@@ -69,5 +96,6 @@ router.post('/doc/op/:docid/:uid', auth.verify, myProxy, function(req,res) {
 router.post('/doc/presence/:docid/:uid', auth.verify, myProxy)
 router.get('/doc/get/:docid/:uid', auth.verify, myProxy)
 
-
+router.get('/index/search/', searchProxy)
+router.get('/index/suggest/', suggestProxy)
 module.exports = router

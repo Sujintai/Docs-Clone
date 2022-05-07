@@ -11,7 +11,7 @@ const DocnameSchema = new Schema(
     },
     { timestamps: true },
 );
-
+/*
 const client = new Client({
   node: 'https://cse356-2c0f5e.es.us-east4.gcp.elastic-cloud.com:9243',
   //cloud: { id: 'CSE356:dXMtZWFzdC0xLmF3cy5mb3VuZC5pbyQ3MTY0MjdlMTI2NTM0ZmIyYmZmYzZiMjQ5OGVhODNiNyQxZjIyNWQ4NDZiZTI0NDdjYjkyOTMxNjAzMDI0N2I1OQ==' },
@@ -20,12 +20,12 @@ const client = new Client({
     password: 'InBZTOnmg20F3OHgvOv0VjIB'
   }
 })
-
+*/
 DocnameSchema.plugin(mongoosastic, {
-  esClient: client
+  /*esClient: client*/
 });
 let Docname = mongoose.model('Docname', DocnameSchema);
-/*Docname.createMapping(function(err, mapping){  
+Docname.createMapping(function(err, mapping){  
     if(err){
       console.log('error creating mapping (you can safely ignore this)');
       console.log(err);
@@ -34,6 +34,6 @@ let Docname = mongoose.model('Docname', DocnameSchema);
       console.log(mapping);
     }
   });
-*/  
-//Docname.synchronize();
+
+Docname.synchronize();
 module.exports = mongoose.model('Docname', DocnameSchema)
